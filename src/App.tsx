@@ -438,12 +438,15 @@ function App() {
 
               {round.heats.map((heat) => {
                 const ranking = evaluateHeatLaps(heat, results?.[round.id]?.[heat.id])
+                const displayedEntrants = ranking.isComplete
+                  ? ranking.ranked.map((entry) => entry.entrant)
+                  : heat.entrants
                 return (
                   <section key={heat.id} className="heat-card">
                     <h4>
                       {heat.label} · Slots {heat.participantSlots}
                     </h4>
-                    {heat.entrants.map((entrant, entrantIndex) => {
+                    {displayedEntrants.map((entrant, entrantIndex) => {
                       const participant = entrant.participant
                       const placeholder = entrant.source
                         ? `R${entrant.source.fromRound + 1} H${entrant.source.fromHeat + 1} #${entrant.source.rank}`
