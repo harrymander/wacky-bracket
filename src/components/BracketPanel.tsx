@@ -4,19 +4,11 @@ type BracketPanelProps = {
   roundStates: RoundState[]
   results: TournamentResults
   isDisplayMode: boolean
-  onOpenDisplayPopout: () => void
   onSetLaps: (roundId: string, heatId: string, participantId: string, value: string) => void
 }
 
-export const BracketPanel = ({ roundStates, results, isDisplayMode, onOpenDisplayPopout, onSetLaps }: BracketPanelProps) => (
+export const BracketPanel = ({ roundStates, results, isDisplayMode, onSetLaps }: BracketPanelProps) => (
   <>
-    {!isDisplayMode ? (
-      <div className="io-row">
-        <button type="button" className="ghost" onClick={onOpenDisplayPopout}>
-          Open display popout
-        </button>
-      </div>
-    ) : null}
     <div className="round-lane">
       {roundStates.map((round, roundIndex) => (
         <article key={round.id} className="round-card">

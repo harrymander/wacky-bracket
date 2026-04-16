@@ -46,12 +46,18 @@ function App() {
       ) : null}
 
       <section className="panel">
-        {!isDisplayMode ? <h2>Bracket</h2> : null}
+        {!isDisplayMode ? (
+          <div className="panel-header">
+            <h2>Bracket</h2>
+            <button type="button" className="ghost" onClick={state.openDisplayPopout}>
+              Open display popout
+            </button>
+          </div>
+        ) : null}
         <BracketPanel
           roundStates={state.roundStates}
           results={state.results}
           isDisplayMode={isDisplayMode}
-          onOpenDisplayPopout={state.openDisplayPopout}
           onSetLaps={state.setLaps}
         />
       </section>
