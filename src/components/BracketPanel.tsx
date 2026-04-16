@@ -89,6 +89,12 @@ const BracketPanelContent = ({ roundStates, results, isDisplayMode, onSetLaps }:
                       onClick={() => setExpandedHeatKey(isExpanded ? null : heatKey)}
                     />
                   </div>
+                  {isDisplayMode ? (
+                    <div className="laps-column-header" aria-hidden="true">
+                      <span />
+                      <span>Laps</span>
+                    </div>
+                  ) : null}
                   {heat.entrants.map((entrant, entrantIndex) => {
                     const participant = entrant.participant
                     const placeholder = entrant.source

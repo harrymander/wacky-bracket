@@ -271,6 +271,21 @@ button.ghost {
   margin: 0;
 }
 
+.laps-column-header {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 132px;
+  align-items: center;
+  margin-bottom: 0.2rem;
+  color: #475569;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.laps-column-header span:last-child {
+  justify-self: end;
+  padding-right: 0.45rem;
+}
+
 .heat-focus-button {
   width: 34px;
   height: 34px;
