@@ -9,7 +9,6 @@ type BracketPanelProps = {
 
 export const BracketPanel = ({ roundStates, results, isDisplayMode, onSetLaps }: BracketPanelProps) => (
   <>
-    <h2>Bracket</h2>
     <div className="round-lane">
       {roundStates.map((round, roundIndex) => (
         <article key={round.id} className="round-card">

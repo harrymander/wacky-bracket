@@ -47,6 +47,7 @@ function App() {
       ) : null}
 
       <section className="panel">
+        {!isDisplayMode ? <h2>Bracket</h2> : null}
         <BracketPanel
           roundStates={state.roundStates}
           results={state.results}
