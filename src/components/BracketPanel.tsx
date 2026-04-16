@@ -118,23 +118,32 @@ const BracketPanelContent = ({ roundStates, results, isDisplayMode, onSetLaps }:
                         <span className="entrant-label">
                           <span>{participant ? participant.name : placeholder}</span>
                           {destinationHeat ? (
-                            <span className="next-destination">{`→ R${roundIndex + 2} H${destinationHeat}`}</span>
+                            <span className="next-destination">
+                              {`→ R${roundIndex + 2} H${destinationHeat}`}
+                            </span>
                           ) : null}
                         </span>
-                        {isDisplayMode ? (
-                          <span className="lap-value">{participant ? currentValue || '-' : '-'}</span>
-                        ) : (
-                          <input
-                            type="number"
-                            name={`laps-${round.id}-${heat.id}-${participant?.id ?? `slot-${entrantIndex}`}`}
-                            min={0}
-                            step={0.25}
-                            disabled={!participant}
-                            value={currentValue}
-                            placeholder={participant ? 'Laps' : '-'}
-                            onChange={(event) => participant && onSetLaps(round.id, heat.id, participant.id, event.target.value)}
-                          />
-                        )}
+                        <span className="value-with-medal">
+                          {destinationHeat && advancingRank >= 1 && advancingRank <= 3 ? (
+                            <span className={`medal-badge medal-${advancingRank}`} aria-label={`${advancingRank} place`}>
+                              {advancingRank}
+                            </span>
+                          ) : null}
+                          {isDisplayMode ? (
+                            <span className="lap-value">{participant ? currentValue || '-' : '-'}</span>
+                          ) : (
+                            <input
+                              type="number"
+                              name={`laps-${round.id}-${heat.id}-${participant?.id ?? `slot-${entrantIndex}`}`}
+                              min={0}
+                              step={0.25}
+                              disabled={!participant}
+                              value={currentValue}
+                              placeholder={participant ? 'Laps' : '-'}
+                              onChange={(event) => participant && onSetLaps(round.id, heat.id, participant.id, event.target.value)}
+                            />
+                          )}
+                        </span>
                       </div>
                     )
                   })}
