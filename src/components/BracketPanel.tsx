@@ -27,9 +27,7 @@ export const BracketPanel = ({ roundStates, results, isDisplayMode, onSetLaps }:
             const ranking = evaluateHeatLaps(heat, results?.[round.id]?.[heat.id])
             return (
               <section key={heat.id} className="heat-card">
-                <h4>
-                  {heat.label} · Slots {heat.participantSlots}
-                </h4>
+                <h4>{heat.label}</h4>
                 {heat.entrants.map((entrant, entrantIndex) => {
                   const participant = entrant.participant
                   const placeholder = entrant.source
