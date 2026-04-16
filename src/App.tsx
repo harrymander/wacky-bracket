@@ -468,7 +468,7 @@ function App() {
                           <input
                             type="number"
                             min={0}
-                            step={0.01}
+                            step={0.25}
                             disabled={!participant}
                             value={currentValue}
                             placeholder={participant ? 'Laps' : '-'}
