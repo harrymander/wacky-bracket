@@ -40,6 +40,13 @@ npm run build
 npm run preview
 ```
 
+## Code structure
+
+- `src/hooks/useTournamentState.ts` manages tournament state, actions, persistence, and cross-window sync.
+- `src/components/SetupPanel.tsx` (with setup tile subcomponents) contains setup/editing UI.
+- `src/components/BracketPanel.tsx` contains bracket display/edit rendering.
+- `src/App.tsx` is the composition root.
+
 ## Configuration rules
 
 1. Round 1 participant slots must exactly match participant count.
