@@ -82,12 +82,23 @@ export const DEFAULT_ROUNDS: RoundConfig[] = [
   {
     id: 'round-1',
     label: 'Round 1',
-    heats: Array.from({ length: 13 }, (_, heatIndex) => createHeat(0, heatIndex, 4, 1)),
+    heats: [
+      createHeat(0, 0, 10, 5),
+      createHeat(0, 1, 10, 5),
+      createHeat(0, 2, 10, 5),
+      createHeat(0, 3, 11, 6),
+      createHeat(0, 4, 11, 6),
+    ],
   },
   {
     id: 'round-2',
+    label: 'Round 2',
+    heats: [createHeat(1, 0, 9, 3), createHeat(1, 1, 9, 3), createHeat(1, 2, 9, 3)],
+  },
+  {
+    id: 'round-3',
     label: 'Final',
-    heats: [createHeat(1, 0, 13, 1)],
+    heats: [createHeat(2, 0, 9, 1)],
   },
 ]
 
