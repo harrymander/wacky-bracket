@@ -407,10 +407,8 @@ button.ghost {
   justify-content: flex-end;
 }
 
-.entrant-row.advancing {
-  background: #ecfdf5;
-  border-radius: 8px;
-  padding: 0.25rem;
+.entrant-row.advancing .entrant-label {
+  font-weight: 700;
 }
 
 .warn,
