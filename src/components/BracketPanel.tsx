@@ -60,7 +60,9 @@ const BracketPanelContent = ({ roundStates, results, isDisplayMode, onSetLaps }:
           <article key={round.id} className={`round-card ${expandedHeatKey ? 'focus-mode' : ''}`}>
             <header>
               <h3>{round.label}</h3>
-              <p>{visibleHeats.length} heat{visibleHeats.length === 1 ? '' : 's'}</p>
+              {roundIndex < roundStates.length - 1 ? (
+                <p>{visibleHeats.length} heat{visibleHeats.length === 1 ? '' : 's'}</p>
+              ) : null}
             </header>
 
             {round.messages.map((message) => (
@@ -78,7 +80,7 @@ const BracketPanelContent = ({ roundStates, results, isDisplayMode, onSetLaps }:
               return (
                 <section key={heat.id} className={`heat-card ${isExpanded ? 'focus-mode' : ''}`}>
                   <div className="heat-header">
-                    <h4>{heat.label}</h4>
+                    {roundIndex < roundStates.length - 1 ? <h4>{heat.label}</h4> : <h4>{round.label}</h4>}
                     <button
                       type="button"
                       className={`ghost heat-focus-button ${isExpanded ? 'compress' : 'expand'}`}
@@ -119,7 +121,7 @@ const BracketPanelContent = ({ roundStates, results, isDisplayMode, onSetLaps }:
                           <span>{participant ? participant.name : placeholder}</span>
                           {destinationHeat ? (
                             <span className="next-destination">
-                              {`→ R${roundIndex + 2} H${destinationHeat}`}
+                              {roundIndex + 1 === roundStates.length - 1 ? `→ F` : `→ R${roundIndex + 2} H${destinationHeat}`}
                             </span>
                           ) : null}
                         </span>

@@ -54,9 +54,35 @@ const getStoredState = (): StoredState => {
   }
 }
 
+const ensureFinalRoundShape = (inputRounds: RoundConfig[]): RoundConfig[] => {
+  const baseRounds = inputRounds.length > 0 ? inputRounds : DEFAULT_ROUNDS
+  const prelimRounds = baseRounds.length > 1 ? baseRounds.slice(0, -1) : baseRounds
+  const safePrelimRounds = prelimRounds.length > 0 ? prelimRounds : [DEFAULT_ROUNDS[0]]
+  const lastPrelimRound = safePrelimRounds[safePrelimRounds.length - 1]
+  const finalIncomingSlots = Math.max(1, totalRoundOutgoing(lastPrelimRound))
+  const existingFinal = baseRounds.length > 1 ? baseRounds[baseRounds.length - 1] : undefined
+  const finalId = existingFinal?.id || `round-${safePrelimRounds.length + 1}`
+  const finalHeat = {
+    ...createHeat(safePrelimRounds.length, 0, finalIncomingSlots, 1),
+    id: `${finalId}-heat-1`,
+    label: 'Final',
+    participantSlots: finalIncomingSlots,
+    advanceCount: 1,
+  }
+
+  return [
+    ...safePrelimRounds,
+    {
+      id: finalId,
+      label: 'Final',
+      heats: [finalHeat],
+    },
+  ]
+}
+
 export const useTournamentState = () => {
   const [participants, setParticipants] = useState(() => getStoredState().participants)
-  const [rounds, setRounds] = useState(() => getStoredState().rounds)
+  const [rounds, setRounds] = useState(() => ensureFinalRoundShape(getStoredState().rounds))
   const [results, setResults] = useState<TournamentResults>(() => getStoredState().results)
   const [participantLines, setParticipantLines] = useState(() =>
     getStoredState()
@@ -81,7 +107,7 @@ export const useTournamentState = () => {
       }
       const next = getStoredState()
       setParticipants(next.participants)
-      setRounds(next.rounds)
+      setRounds(ensureFinalRoundShape(next.rounds))
       setResults(next.results)
       setParticipantLines(next.participants.map((entry) => entry.name).join('\n'))
     }
@@ -129,7 +155,8 @@ export const useTournamentState = () => {
   ) => {
     clearStatus()
     setRounds((previous) =>
-      previous.map((round, currentRoundIndex) => {
+      ensureFinalRoundShape(
+        previous.map((round, currentRoundIndex) => {
         if (currentRoundIndex !== roundIndex) {
           return round
         }
@@ -147,6 +174,7 @@ export const useTournamentState = () => {
         })
         return { ...round, heats: nextHeats }
       }),
+      ),
     )
     setResults({})
   }
@@ -154,7 +182,8 @@ export const useTournamentState = () => {
   const addHeat = (roundIndex: number) => {
     clearStatus()
     setRounds((previous) =>
-      previous.map((round, currentRoundIndex) => {
+      ensureFinalRoundShape(
+        previous.map((round, currentRoundIndex) => {
         if (currentRoundIndex !== roundIndex) {
           return round
         }
@@ -163,6 +192,7 @@ export const useTournamentState = () => {
           heats: [...round.heats, createHeat(roundIndex, round.heats.length, 2, 1)],
         }
       }),
+      ),
     )
     setResults({})
   }
@@ -170,7 +200,8 @@ export const useTournamentState = () => {
   const removeHeat = (roundIndex: number, heatIndex: number) => {
     clearStatus()
     setRounds((previous) =>
-      previous.map((round, currentRoundIndex) => {
+      ensureFinalRoundShape(
+        previous.map((round, currentRoundIndex) => {
         if (currentRoundIndex !== roundIndex || round.heats.length <= 1) {
           return round
         }
@@ -179,6 +210,7 @@ export const useTournamentState = () => {
           heats: round.heats.filter((_, currentHeatIndex) => currentHeatIndex !== heatIndex),
         }
       }),
+      ),
     )
     setResults({})
   }
@@ -186,16 +218,18 @@ export const useTournamentState = () => {
   const addRound = () => {
     clearStatus()
     setRounds((previous) => {
-      const previousRound = previous[previous.length - 1]
-      const incoming = totalRoundOutgoing(previousRound)
-      return [
-        ...previous,
+      const prelimRounds = previous.slice(0, -1)
+      const sourceRound = prelimRounds[prelimRounds.length - 1]
+      const incoming = totalRoundOutgoing(sourceRound)
+      const nextRounds = [
+        ...prelimRounds,
         {
-          id: `round-${previous.length + 1}`,
-          label: `Round ${previous.length + 1}`,
-          heats: [createHeat(previous.length, 0, incoming, 1)],
+          id: `round-${prelimRounds.length + 1}`,
+          label: `Round ${prelimRounds.length + 1}`,
+          heats: [createHeat(prelimRounds.length, 0, incoming, 1)],
         },
       ]
+      return ensureFinalRoundShape(nextRounds)
     })
     setResults({})
   }
@@ -203,10 +237,11 @@ export const useTournamentState = () => {
   const removeRound = () => {
     clearStatus()
     setRounds((previous) => {
-      if (previous.length <= 1) {
+      const prelimRounds = previous.slice(0, -1)
+      if (prelimRounds.length <= 1) {
         return previous
       }
-      return previous.slice(0, -1)
+      return ensureFinalRoundShape(prelimRounds.slice(0, -1))
     })
     setResults({})
   }
@@ -214,7 +249,8 @@ export const useTournamentState = () => {
   const updateRoundLabel = (roundIndex: number, value: string) => {
     clearStatus()
     setRounds((previous) =>
-      previous.map((round, currentRoundIndex) => {
+      ensureFinalRoundShape(
+        previous.map((round, currentRoundIndex) => {
         if (currentRoundIndex !== roundIndex) {
           return round
         }
@@ -223,6 +259,7 @@ export const useTournamentState = () => {
           label: value,
         }
       }),
+      ),
     )
   }
 
@@ -241,7 +278,7 @@ export const useTournamentState = () => {
 
   const resetState = () => {
     setParticipants(DEFAULT_STATE.participants)
-    setRounds(DEFAULT_STATE.rounds)
+    setRounds(ensureFinalRoundShape(DEFAULT_STATE.rounds))
     setResults({})
     setParticipantLines(DEFAULT_STATE.participants.map((entry) => entry.name).join('\n'))
     setStatusMessage('Reset to default wacky-bracket.')
@@ -278,7 +315,7 @@ export const useTournamentState = () => {
         return
       }
       setParticipants(nextParticipants)
-      setRounds(nextRounds)
+      setRounds(ensureFinalRoundShape(nextRounds))
       setResults(nextResults)
       setParticipantLines(nextParticipants.map((entry) => entry.name).join('\n'))
       setStatusMessage('Tournament imported from JSON.')

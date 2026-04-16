@@ -27,28 +27,31 @@ export const RoundsSetupTile = ({
   onRemoveHeat,
   onUpdateRoundLabel,
   onUpdateHeat,
-}: RoundsSetupTileProps) => (
-  <article className="setup-tile">
-    <div className="setup-tile-header">
-      <h3>Rounds</h3>
-      <button type="button" className="ghost" onClick={onToggleOpen}>
-        {roundsOpen ? 'Collapse' : 'Expand'}
-      </button>
-    </div>
-    {roundsOpen ? (
-      <>
-        <div className="round-controls-head">
-          <div className="io-row">
-            <button type="button" onClick={onAddRound}>
-              Add round
-            </button>
-            <button type="button" className="ghost" onClick={onRemoveRound}>
-              Remove last round
-            </button>
-          </div>
-        </div>
+}: RoundsSetupTileProps) => {
+  const configurableRounds = rounds.slice(0, -1)
 
-        {rounds.map((round, roundIndex) => (
+  return (
+    <article className="setup-tile">
+      <div className="setup-tile-header">
+        <h3>Rounds</h3>
+        <button type="button" className="ghost" onClick={onToggleOpen}>
+          {roundsOpen ? 'Collapse' : 'Expand'}
+        </button>
+      </div>
+      {roundsOpen ? (
+        <>
+          <div className="round-controls-head">
+            <div className="io-row">
+              <button type="button" onClick={onAddRound}>
+                Add round
+              </button>
+              <button type="button" className="ghost" onClick={onRemoveRound}>
+                Remove last round
+              </button>
+            </div>
+          </div>
+
+          {configurableRounds.map((round, roundIndex) => (
           <article key={round.id} className="round-config-card">
             <label className="round-name-field">
               Round name
@@ -105,8 +108,9 @@ export const RoundsSetupTile = ({
               </div>
             ))}
           </article>
-        ))}
-      </>
-    ) : null}
-  </article>
-)
+          ))}
+        </>
+      ) : null}
+    </article>
+  )
+}
