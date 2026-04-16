@@ -11,7 +11,8 @@ Static client-side app for building multi-round race brackets.
 - Laps-based progression (race format):
   - higher laps completed is better
   - top `n` per heat advance
-  - duplicate lap totals in the same heat are invalid
+  - duplicate lap totals are allowed only below the advancement cutoff
+  - ties at or across the top-`n` cutoff are invalid and must be broken
 - Interactive bracket view with locked downstream rounds until lap totals are complete.
 - Participant input:
   - manual list

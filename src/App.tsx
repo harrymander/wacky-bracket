@@ -479,7 +479,9 @@ function App() {
                         </div>
                       )
                     })}
-                    {ranking.hasTie ? <p className="warn">Lap totals must be unique in this heat.</p> : null}
+                    {ranking.hasTie ? (
+                      <p className="warn">Top qualifying positions must have unique lap totals.</p>
+                    ) : null}
                   </section>
                 )
               })}

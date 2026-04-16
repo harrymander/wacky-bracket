@@ -257,12 +257,20 @@ export const evaluateHeatLaps = (
     return { isComplete: false, hasTie: false, ranked: [] }
   }
 
-  const lapsValues = ranked.map((entry) => entry.laps)
-  const hasTie = new Set(lapsValues).size !== lapsValues.length
+  const sorted = [...ranked].sort((a, b) => b.laps - a.laps)
+  const cutoffIndex = heat.advanceCount - 1
+  const topAdvancers = sorted.slice(0, heat.advanceCount)
+  const topLaps = topAdvancers.map((entry) => entry.laps)
+  const hasTieWithinTop = new Set(topLaps).size !== topLaps.length
+  const hasBoundaryTie =
+    cutoffIndex >= 0 &&
+    cutoffIndex + 1 < sorted.length &&
+    sorted[cutoffIndex].laps === sorted[cutoffIndex + 1].laps
+  const hasTie = hasTieWithinTop || hasBoundaryTie
   return {
     isComplete: true,
     hasTie,
-    ranked: [...ranked].sort((a, b) => b.laps - a.laps),
+    ranked: sorted,
   }
 }
 
@@ -348,7 +356,7 @@ export const buildTournament = (
       })
 
       if (state.hasTie) {
-        state.messages.push('Duplicate lap totals found. Lap totals must be unique within each heat.')
+        state.messages.push('Tie at/within qualifying positions. Top qualifiers must have unique lap totals.')
       }
       if (!state.canAdvance && !state.hasTie) {
         state.messages.push('Enter laps completed for all entrants in this round to unlock the next round.')
