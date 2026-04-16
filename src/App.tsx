@@ -16,7 +16,6 @@ function App() {
     <main className={`app ${isDisplayMode ? 'display-mode' : ''}`}>
       <header className="page-header">
         <h1>Wacky Racers</h1>
-        {isDisplayMode ? <p>Read-only display mode</p> : null}
       </header>
 
       {!isDisplayMode ? (
