@@ -29,6 +29,8 @@ export const RoundsSetupTile = ({
   onUpdateHeat,
 }: RoundsSetupTileProps) => {
   const configurableRounds = rounds.slice(0, -1)
+  const finalRound = rounds[rounds.length - 1]
+  const finalParticipants = finalRound ? totalRoundSlots(finalRound) : 0
 
   return (
     <article className="setup-tile">
@@ -52,63 +54,67 @@ export const RoundsSetupTile = ({
           </div>
 
           {configurableRounds.map((round, roundIndex) => (
-          <article key={round.id} className="round-config-card">
-            <label className="round-name-field">
-              Round name
-              <input
-                className="round-name-input"
-                type="text"
-                name={`round-${roundIndex + 1}-name`}
-                value={round.label}
-                onChange={(event) => onUpdateRoundLabel(roundIndex, event.target.value)}
-                placeholder={`Round ${roundIndex + 1}`}
-              />
-            </label>
-            <p className="hint">
-              Incoming slots: {totalRoundSlots(round)} · Outgoing qualifiers: {totalRoundOutgoing(round)}
-            </p>
-            <div className="io-row">
-              <button type="button" onClick={() => onAddHeat(roundIndex)}>
-                Add heat
-              </button>
-            </div>
-
-            {round.heats.map((heat, heatIndex) => (
-              <div key={heat.id} className="heat-config-row">
-                <strong>{heat.label}</strong>
-                <label>
-                  Participants
-                  <input
-                    type="number"
-                    name={`round-${roundIndex + 1}-heat-${heatIndex + 1}-participants`}
-                    min={1}
-                    value={heat.participantSlots}
-                    onChange={(event) => onUpdateHeat(roundIndex, heatIndex, 'participantSlots', event.target.value)}
-                  />
-                </label>
-                <label>
-                  Advance
-                  <input
-                    type="number"
-                    name={`round-${roundIndex + 1}-heat-${heatIndex + 1}-advance`}
-                    min={1}
-                    value={heat.advanceCount}
-                    disabled={roundIndex === rounds.length - 1}
-                    onChange={(event) => onUpdateHeat(roundIndex, heatIndex, 'advanceCount', event.target.value)}
-                  />
-                </label>
-                <button
-                  type="button"
-                  className="ghost"
-                  disabled={round.heats.length <= 1}
-                  onClick={() => onRemoveHeat(roundIndex, heatIndex)}
-                >
-                  Remove heat
+            <article key={round.id} className="round-config-card">
+              <label className="round-name-field">
+                Round name
+                <input
+                  className="round-name-input"
+                  type="text"
+                  name={`round-${roundIndex + 1}-name`}
+                  value={round.label}
+                  onChange={(event) => onUpdateRoundLabel(roundIndex, event.target.value)}
+                  placeholder={`Round ${roundIndex + 1}`}
+                />
+              </label>
+              <p className="hint">
+                Incoming slots: {totalRoundSlots(round)} · Outgoing qualifiers: {totalRoundOutgoing(round)}
+              </p>
+              <div className="io-row">
+                <button type="button" onClick={() => onAddHeat(roundIndex)}>
+                  Add heat
                 </button>
               </div>
-            ))}
-          </article>
+
+              {round.heats.map((heat, heatIndex) => (
+                <div key={heat.id} className="heat-config-row">
+                  <strong>{heat.label}</strong>
+                  <label>
+                    Participants
+                    <input
+                      type="number"
+                      name={`round-${roundIndex + 1}-heat-${heatIndex + 1}-participants`}
+                      min={1}
+                      value={heat.participantSlots}
+                      onChange={(event) => onUpdateHeat(roundIndex, heatIndex, 'participantSlots', event.target.value)}
+                    />
+                  </label>
+                  <label>
+                    Advance
+                    <input
+                      type="number"
+                      name={`round-${roundIndex + 1}-heat-${heatIndex + 1}-advance`}
+                      min={1}
+                      value={heat.advanceCount}
+                      disabled={roundIndex === rounds.length - 1}
+                      onChange={(event) => onUpdateHeat(roundIndex, heatIndex, 'advanceCount', event.target.value)}
+                    />
+                  </label>
+                  <button
+                    type="button"
+                    className="ghost"
+                    disabled={round.heats.length <= 1}
+                    onClick={() => onRemoveHeat(roundIndex, heatIndex)}
+                  >
+                    Remove heat
+                  </button>
+                </div>
+              ))}
+            </article>
           ))}
+          <article className="round-config-card">
+            <strong>Final</strong>
+            <p className="hint">Participants (auto-derived): {finalParticipants}</p>
+          </article>
         </>
       ) : null}
     </article>
