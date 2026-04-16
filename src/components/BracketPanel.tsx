@@ -57,6 +57,7 @@ export const BracketPanel = ({ roundStates, results, isDisplayMode, onSetLaps }:
                       ) : (
                         <input
                           type="number"
+                          name={`laps-${round.id}-${heat.id}-${participant?.id ?? 'slot-' + entrantIndex}`}
                           min={0}
                           step={0.25}
                           disabled={!participant}

@@ -69,7 +69,7 @@ export const SetupPanel = ({
         </button>
         <label className="file-button">
           Import JSON
-          <input type="file" accept="application/json" onChange={handleImportJson} />
+          <input name="import-json-file" type="file" accept="application/json" onChange={handleImportJson} />
         </label>
         <button type="button" className="ghost" onClick={onResetState}>
           Reset

@@ -37,6 +37,7 @@ export const ParticipantsSetupTile = ({
           </label>
           <textarea
             id="participants"
+            name="participants"
             rows={8}
             value={participantLines}
             onChange={(event) => onParticipantLinesChange(event.target.value)}
@@ -47,7 +48,7 @@ export const ParticipantsSetupTile = ({
             </button>
             <label className="file-button">
               Import participants CSV
-              <input type="file" accept=".csv,text/csv" onChange={handleImportCsv} />
+              <input name="import-participants-csv" type="file" accept=".csv,text/csv" onChange={handleImportCsv} />
             </label>
           </div>
         </>

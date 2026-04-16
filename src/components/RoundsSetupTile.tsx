@@ -55,6 +55,7 @@ export const RoundsSetupTile = ({
               <input
                 className="round-name-input"
                 type="text"
+                name={`round-${roundIndex + 1}-name`}
                 value={round.label}
                 onChange={(event) => onUpdateRoundLabel(roundIndex, event.target.value)}
                 placeholder={`Round ${roundIndex + 1}`}
@@ -76,6 +77,7 @@ export const RoundsSetupTile = ({
                   Participants
                   <input
                     type="number"
+                    name={`round-${roundIndex + 1}-heat-${heatIndex + 1}-participants`}
                     min={1}
                     value={heat.participantSlots}
                     onChange={(event) => onUpdateHeat(roundIndex, heatIndex, 'participantSlots', event.target.value)}
@@ -85,6 +87,7 @@ export const RoundsSetupTile = ({
                   Advance
                   <input
                     type="number"
+                    name={`round-${roundIndex + 1}-heat-${heatIndex + 1}-advance`}
                     min={1}
                     value={heat.advanceCount}
                     disabled={roundIndex === rounds.length - 1}
