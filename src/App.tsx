@@ -50,8 +50,7 @@ function App() {
           <div className="panel-header">
             <h2>Bracket</h2>
             <button type="button" className="ghost display-button" onClick={state.openDisplayPopout}>
-              <img src="/open-in-new-window.svg" alt="" aria-hidden="true" />
-              <span>Display</span>
+              Display
             </button>
           </div>
         ) : null}

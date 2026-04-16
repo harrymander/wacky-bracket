@@ -48,9 +48,15 @@
   gap: 0.4rem;
 }
 
-.display-button img {
+.display-button::before {
+  content: '';
+  display: inline-block;
   width: 16px;
   height: 16px;
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: 16px 16px;
+  background-image: url("data:image/svg+xml,%3Csvg%20viewBox%3D%270%200%20512%20512%27%20xmlns%3D%27http%3A//www.w3.org/2000/svg%27%3E%3Cg%20fill%3D%27%23000%27%3E%3Cpath%20d%3D%27M96%200v416h416V0H96zm376%20376H136V40h336v336z%27/%3E%3Cpath%20d%3D%27M40%20472V96H0v416h416v-40H40z%27/%3E%3Cpath%20d%3D%27M232.812%20312.829l117.859-117.86v84.797h40V126.688H237.594v40h84.796l-117.859%20117.859z%27/%3E%3C/g%3E%3C/svg%3E");
 }
 
 .participants-label {
