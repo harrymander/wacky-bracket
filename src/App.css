@@ -42,6 +42,17 @@
   margin: 0;
 }
 
+.display-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.display-button img {
+  width: 16px;
+  height: 16px;
+}
+
 .participants-label {
   display: block;
   margin-top: 1rem;
