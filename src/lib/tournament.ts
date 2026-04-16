@@ -74,27 +74,20 @@ export const createHeat = (roundIndex: number, heatIndex: number, slots: number,
   advanceCount: toPositiveInt(advance),
 })
 
-export const DEFAULT_PARTICIPANTS: Participant[] = [
-  'Ari',
-  'Blake',
-  'Casey',
-  'Drew',
-  'Elliot',
-  'Flynn',
-  'Gray',
-  'Hayden',
-].map(participantFromName)
+export const DEFAULT_PARTICIPANTS: Participant[] = Array.from({ length: 52 }, (_, index) => `Group ${index + 1}`).map(
+  participantFromName,
+)
 
 export const DEFAULT_ROUNDS: RoundConfig[] = [
   {
     id: 'round-1',
     label: 'Round 1',
-    heats: [createHeat(0, 0, 4, 2), createHeat(0, 1, 4, 2)],
+    heats: Array.from({ length: 13 }, (_, heatIndex) => createHeat(0, heatIndex, 4, 1)),
   },
   {
     id: 'round-2',
     label: 'Final',
-    heats: [createHeat(1, 0, 4, 1)],
+    heats: [createHeat(1, 0, 13, 1)],
   },
 ]
 
