@@ -60,7 +60,7 @@ const BracketPanelContent = ({ roundStates, results, isDisplayMode, onSetLaps }:
           <article key={round.id} className={`round-card ${expandedHeatKey ? 'focus-mode' : ''}`}>
             <header>
               <h3>{round.label}</h3>
-              {roundIndex < roundStates.length - 1 ? (
+              {!expandedHeatKey && roundIndex < roundStates.length - 1 ? (
                 <p>{visibleHeats.length} heat{visibleHeats.length === 1 ? '' : 's'}</p>
               ) : null}
             </header>
