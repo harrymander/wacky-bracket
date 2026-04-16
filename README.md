@@ -1,4 +1,4 @@
-# Race Bracket Builder (React + TypeScript + Vite)
+# wacky-bracket (React + TypeScript + Vite)
 
 Static client-side app for building multi-round race brackets.
 

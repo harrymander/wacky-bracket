@@ -16,7 +16,7 @@ import {
   validateTournament,
 } from './lib/tournament'
 
-const STORAGE_KEY = 'race-bracket-state-v1'
+const STORAGE_KEY = 'wacky-bracket-state-v1'
 
 type StoredState = {
   participants: typeof DEFAULT_PARTICIPANTS
@@ -226,7 +226,7 @@ function App() {
     setRounds(DEFAULT_STATE.rounds)
     setResults({})
     setParticipantLines(DEFAULT_STATE.participants.map((entry) => entry.name).join('\n'))
-    setStatusMessage('Reset to default race bracket.')
+    setStatusMessage('Reset to default wacky-bracket.')
   }
 
   const exportJson = () => {
@@ -236,7 +236,7 @@ function App() {
     const url = window.URL.createObjectURL(blob)
     const link = document.createElement('a')
     link.href = url
-    link.download = 'race-bracket.json'
+    link.download = 'wacky-bracket.json'
     link.click()
     window.URL.revokeObjectURL(url)
   }
@@ -275,7 +275,7 @@ function App() {
   return (
     <main className="app">
       <header className="page-header">
-        <h1>Race Tournament Brackets</h1>
+        <h1>wacky-bracket</h1>
         <p>Each heat has its own participant count and its own number of qualifiers.</p>
       </header>
 
