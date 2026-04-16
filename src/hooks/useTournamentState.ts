@@ -56,7 +56,9 @@ const getStoredState = (): StoredState => {
 
 const ensureFinalRoundShape = (inputRounds: RoundConfig[]): RoundConfig[] => {
   const baseRounds = inputRounds.length > 0 ? inputRounds : DEFAULT_ROUNDS
-  const prelimRounds = baseRounds.length > 1 ? baseRounds.slice(0, -1) : baseRounds
+  const hasExplicitFinal =
+    baseRounds.length > 1 && (baseRounds[baseRounds.length - 1].label || '').trim().toLowerCase() === 'final'
+  const prelimRounds = hasExplicitFinal ? baseRounds.slice(0, -1) : baseRounds
   const safePrelimRounds = prelimRounds.length > 0 ? prelimRounds : [DEFAULT_ROUNDS[0]]
   const lastPrelimRound = safePrelimRounds[safePrelimRounds.length - 1]
   const finalIncomingSlots = Math.max(1, totalRoundOutgoing(lastPrelimRound))
