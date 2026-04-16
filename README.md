@@ -14,6 +14,7 @@ Static client-side app for building multi-round race brackets.
   - duplicate lap totals are allowed only below the advancement cutoff
   - ties at or across the top-`n` cutoff are invalid and must be broken
 - Interactive bracket view with locked downstream rounds until lap totals are complete.
+- Read-only display popout mode for second-screen bracket viewing, with live updates from the main window.
 - Participant input:
   - manual list
   - CSV import
@@ -28,6 +29,9 @@ Static client-side app for building multi-round race brackets.
 npm install
 npm run dev
 ```
+
+In the main app, use **Open display popout** to launch a read-only bracket view.
+You can also open it directly with `?view=display` (for example: `http://localhost:5173/?view=display`).
 
 ## Build
 

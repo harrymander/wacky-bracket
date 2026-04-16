@@ -58,6 +58,10 @@ const getStoredState = (): StoredState => {
 }
 
 function App() {
+  const isDisplayMode = useMemo(() => {
+    const query = new URLSearchParams(window.location.search)
+    return query.get('view') === 'display'
+  }, [])
   const [participants, setParticipants] = useState(() => getStoredState().participants)
   const [rounds, setRounds] = useState(() => getStoredState().rounds)
   const [results, setResults] = useState<TournamentResults>(() => getStoredState().results)
@@ -76,6 +80,22 @@ function App() {
   useEffect(() => {
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify({ participants, rounds, results }))
   }, [participants, rounds, results])
+
+  useEffect(() => {
+    const syncFromStorage = (event: StorageEvent) => {
+      if (event.key !== STORAGE_KEY) {
+        return
+      }
+      const next = getStoredState()
+      setParticipants(next.participants)
+      setRounds(next.rounds)
+      setResults(next.results)
+      setParticipantLines(next.participants.map((entry) => entry.name).join('\n'))
+    }
+
+    window.addEventListener('storage', syncFromStorage)
+    return () => window.removeEventListener('storage', syncFromStorage)
+  }, [])
 
   const clearStatus = () => setStatusMessage('')
 
@@ -274,151 +294,166 @@ function App() {
     }
   }
 
+  const openDisplayPopout = () => {
+    const nextUrl = new URL(window.location.href)
+    nextUrl.searchParams.set('view', 'display')
+    const popout = window.open(nextUrl.toString(), 'wacky-bracket-display', 'popup=yes,width=1600,height=900')
+    if (!popout) {
+      setStatusMessage('Unable to open popout. Check your browser popup settings.')
+    }
+  }
+
   return (
-    <main className="app">
+    <main className={`app ${isDisplayMode ? 'display-mode' : ''}`}>
       <header className="page-header">
         <h1>Wacky Racers</h1>
+        {isDisplayMode ? <p>Read-only display mode</p> : null}
       </header>
 
-      <section className="panel">
-        <h2>Setup</h2>
-        <div className="io-row">
-          <button type="button" onClick={exportJson}>
-            Export JSON
-          </button>
-          <label className="file-button">
-            Import JSON
-            <input type="file" accept="application/json" onChange={importJson} />
-          </label>
-          <button type="button" className="ghost" onClick={resetState}>
-            Reset
-          </button>
-        </div>
-
-        <article className="setup-tile">
-          <div className="setup-tile-header">
-            <h3>Participants</h3>
-            <button type="button" className="ghost" onClick={() => setParticipantsOpen((value) => !value)}>
-              {participantsOpen ? 'Collapse' : 'Expand'}
+      {!isDisplayMode ? (
+        <section className="panel">
+          <h2>Setup</h2>
+          <div className="io-row">
+            <button type="button" onClick={exportJson}>
+              Export JSON
+            </button>
+            <label className="file-button">
+              Import JSON
+              <input type="file" accept="application/json" onChange={importJson} />
+            </label>
+            <button type="button" className="ghost" onClick={resetState}>
+              Reset
+            </button>
+            <button type="button" className="ghost" onClick={openDisplayPopout}>
+              Open display popout
             </button>
           </div>
-          {participantsOpen ? (
-            <>
-              <label htmlFor="participants" className="participants-label">
-                Participants (one per line)
-              </label>
-              <textarea
-                id="participants"
-                rows={8}
-                value={participantLines}
-                onChange={(event) => setParticipantLines(event.target.value)}
-              />
-              <div className="io-row">
-                <button type="button" onClick={applyParticipants}>
-                  Apply participant list
-                </button>
-                <label className="file-button">
-                  Import participants CSV
-                  <input type="file" accept=".csv,text/csv" onChange={importCsv} />
+
+          <article className="setup-tile">
+            <div className="setup-tile-header">
+              <h3>Participants</h3>
+              <button type="button" className="ghost" onClick={() => setParticipantsOpen((value) => !value)}>
+                {participantsOpen ? 'Collapse' : 'Expand'}
+              </button>
+            </div>
+            {participantsOpen ? (
+              <>
+                <label htmlFor="participants" className="participants-label">
+                  Participants (one per line)
                 </label>
-              </div>
-            </>
-          ) : null}
-        </article>
-
-        <article className="setup-tile">
-          <div className="setup-tile-header">
-            <h3>Rounds</h3>
-            <button type="button" className="ghost" onClick={() => setRoundsOpen((value) => !value)}>
-              {roundsOpen ? 'Collapse' : 'Expand'}
-            </button>
-          </div>
-          {roundsOpen ? (
-            <>
-              <div className="round-controls-head">
+                <textarea
+                  id="participants"
+                  rows={8}
+                  value={participantLines}
+                  onChange={(event) => setParticipantLines(event.target.value)}
+                />
                 <div className="io-row">
-                  <button type="button" onClick={addRound}>
-                    Add round
+                  <button type="button" onClick={applyParticipants}>
+                    Apply participant list
                   </button>
-                  <button type="button" className="ghost" onClick={removeRound}>
-                    Remove last round
-                  </button>
-                </div>
-              </div>
-
-              {rounds.map((round, roundIndex) => (
-                <article key={round.id} className="round-config-card">
-                  <label className="round-name-field">
-                    Round name
-                    <input
-                      className="round-name-input"
-                      type="text"
-                      value={round.label}
-                      onChange={(event) => updateRoundLabel(roundIndex, event.target.value)}
-                      placeholder={`Round ${roundIndex + 1}`}
-                    />
+                  <label className="file-button">
+                    Import participants CSV
+                    <input type="file" accept=".csv,text/csv" onChange={importCsv} />
                   </label>
-                  <p className="hint">
-                    Incoming slots: {totalRoundSlots(round)} · Outgoing qualifiers: {totalRoundOutgoing(round)}
-                  </p>
+                </div>
+              </>
+            ) : null}
+          </article>
+
+          <article className="setup-tile">
+            <div className="setup-tile-header">
+              <h3>Rounds</h3>
+              <button type="button" className="ghost" onClick={() => setRoundsOpen((value) => !value)}>
+                {roundsOpen ? 'Collapse' : 'Expand'}
+              </button>
+            </div>
+            {roundsOpen ? (
+              <>
+                <div className="round-controls-head">
                   <div className="io-row">
-                    <button type="button" onClick={() => addHeat(roundIndex)}>
-                      Add heat
+                    <button type="button" onClick={addRound}>
+                      Add round
+                    </button>
+                    <button type="button" className="ghost" onClick={removeRound}>
+                      Remove last round
                     </button>
                   </div>
+                </div>
 
-                  {round.heats.map((heat, heatIndex) => (
-                    <div key={heat.id} className="heat-config-row">
-                      <strong>{heat.label}</strong>
-                      <label>
-                        Participants
-                        <input
-                          type="number"
-                          min={1}
-                          value={heat.participantSlots}
-                          onChange={(event) => updateHeat(roundIndex, heatIndex, 'participantSlots', event.target.value)}
-                        />
-                      </label>
-                      <label>
-                        Advance
-                        <input
-                          type="number"
-                          min={1}
-                          value={heat.advanceCount}
-                          disabled={roundIndex === rounds.length - 1}
-                          onChange={(event) => updateHeat(roundIndex, heatIndex, 'advanceCount', event.target.value)}
-                        />
-                      </label>
-                      <button
-                        type="button"
-                        className="ghost"
-                        disabled={round.heats.length <= 1}
-                        onClick={() => removeHeat(roundIndex, heatIndex)}
-                      >
-                        Remove heat
+                {rounds.map((round, roundIndex) => (
+                  <article key={round.id} className="round-config-card">
+                    <label className="round-name-field">
+                      Round name
+                      <input
+                        className="round-name-input"
+                        type="text"
+                        value={round.label}
+                        onChange={(event) => updateRoundLabel(roundIndex, event.target.value)}
+                        placeholder={`Round ${roundIndex + 1}`}
+                      />
+                    </label>
+                    <p className="hint">
+                      Incoming slots: {totalRoundSlots(round)} · Outgoing qualifiers: {totalRoundOutgoing(round)}
+                    </p>
+                    <div className="io-row">
+                      <button type="button" onClick={() => addHeat(roundIndex)}>
+                        Add heat
                       </button>
                     </div>
-                  ))}
-                </article>
-              ))}
-            </>
-          ) : null}
-        </article>
 
-        {statusMessage ? <p className="status">{statusMessage}</p> : null}
-        {errors.length > 0 ? (
-          <div className="errors">
-            <h3>Configuration issues</h3>
-            <ul>
-              {errors.map((error) => (
-                <li key={error}>{error}</li>
-              ))}
-            </ul>
-          </div>
-        ) : (
-          <p className="ok">Configuration is valid.</p>
-        )}
-      </section>
+                    {round.heats.map((heat, heatIndex) => (
+                      <div key={heat.id} className="heat-config-row">
+                        <strong>{heat.label}</strong>
+                        <label>
+                          Participants
+                          <input
+                            type="number"
+                            min={1}
+                            value={heat.participantSlots}
+                            onChange={(event) => updateHeat(roundIndex, heatIndex, 'participantSlots', event.target.value)}
+                          />
+                        </label>
+                        <label>
+                          Advance
+                          <input
+                            type="number"
+                            min={1}
+                            value={heat.advanceCount}
+                            disabled={roundIndex === rounds.length - 1}
+                            onChange={(event) => updateHeat(roundIndex, heatIndex, 'advanceCount', event.target.value)}
+                          />
+                        </label>
+                        <button
+                          type="button"
+                          className="ghost"
+                          disabled={round.heats.length <= 1}
+                          onClick={() => removeHeat(roundIndex, heatIndex)}
+                        >
+                          Remove heat
+                        </button>
+                      </div>
+                    ))}
+                  </article>
+                ))}
+              </>
+            ) : null}
+          </article>
+
+          {statusMessage ? <p className="status">{statusMessage}</p> : null}
+          {errors.length > 0 ? (
+            <div className="errors">
+              <h3>Configuration issues</h3>
+              <ul>
+                {errors.map((error) => (
+                  <li key={error}>{error}</li>
+                ))}
+              </ul>
+            </div>
+          ) : (
+            <p className="ok">Configuration is valid.</p>
+          )}
+        </section>
+      ) : null}
 
       <section className="panel">
         <h2>Bracket</h2>
@@ -465,17 +500,21 @@ function App() {
                           className={`entrant-row ${isAdvancing ? 'advancing' : ''}`}
                         >
                           <span>{participant ? participant.name : placeholder}</span>
-                          <input
-                            type="number"
-                            min={0}
-                            step={0.25}
-                            disabled={!participant}
-                            value={currentValue}
-                            placeholder={participant ? 'Laps' : '-'}
-                            onChange={(event) =>
-                              participant && setLaps(round.id, heat.id, participant.id, event.target.value)
-                            }
-                          />
+                          {isDisplayMode ? (
+                            <span className="lap-value">{participant ? currentValue || '-' : '-'}</span>
+                          ) : (
+                            <input
+                              type="number"
+                              min={0}
+                              step={0.25}
+                              disabled={!participant}
+                              value={currentValue}
+                              placeholder={participant ? 'Laps' : '-'}
+                              onChange={(event) =>
+                                participant && setLaps(round.id, heat.id, participant.id, event.target.value)
+                              }
+                            />
+                          )}
                         </div>
                       )
                     })}
