@@ -7,6 +7,36 @@ type BracketPanelProps = {
   onSetLaps: (roundId: string, heatId: string, participantId: string, value: string) => void
 }
 
+const buildDestinationHeatMap = (roundStates: RoundState[], roundIndex: number) => {
+  const map = new Map<string, number>()
+  if (roundIndex >= roundStates.length - 1) {
+    return map
+  }
+
+  const currentRound = roundStates[roundIndex]
+  const nextRound = roundStates[roundIndex + 1]
+
+  const destinationHeatSlots: number[] = []
+  nextRound.heats.forEach((heat, nextHeatIndex) => {
+    for (let i = 0; i < heat.participantSlots; i += 1) {
+      destinationHeatSlots.push(nextHeatIndex + 1)
+    }
+  })
+
+  let cursor = 0
+  currentRound.heats.forEach((heat, heatIndex) => {
+    for (let rank = 1; rank <= heat.advanceCount; rank += 1) {
+      const destinationHeat = destinationHeatSlots[cursor]
+      if (destinationHeat !== undefined) {
+        map.set(`${heatIndex}-${rank}`, destinationHeat)
+      }
+      cursor += 1
+    }
+  })
+
+  return map
+}
+
 export const BracketPanel = ({ roundStates, results, isDisplayMode, onSetLaps }: BracketPanelProps) => (
   <>
     <div className="round-lane">
@@ -14,7 +44,7 @@ export const BracketPanel = ({ roundStates, results, isDisplayMode, onSetLaps }:
         <article key={round.id} className="round-card">
           <header>
             <h3>{round.label}</h3>
-            <p>{round.heats.length} heat{ round.heats.length == 1 ? "" : "s" }</p>
+            <p>{round.heats.length} heat{round.heats.length === 1 ? '' : 's'}</p>
           </header>
 
           {round.messages.map((message) => (
@@ -23,7 +53,9 @@ export const BracketPanel = ({ roundStates, results, isDisplayMode, onSetLaps }:
             </p>
           ))}
 
-          {round.heats.map((heat) => {
+          {(() => {
+            const destinationHeatMap = buildDestinationHeatMap(roundStates, roundIndex)
+            return round.heats.map((heat, heatIndex) => {
             const ranking = evaluateHeatLaps(heat, results?.[round.id]?.[heat.id])
             return (
               <section key={heat.id} className="heat-card">
@@ -43,13 +75,25 @@ export const BracketPanel = ({ roundStates, results, isDisplayMode, onSetLaps }:
                     ranking.ranked
                       .slice(0, heat.advanceCount)
                       .some((entry) => entry.entrant.participant?.id === participant?.id)
+                  const advancingRank = participant
+                    ? ranking.ranked.findIndex((entry) => entry.entrant.participant?.id === participant.id) + 1
+                    : 0
+                  const destinationHeat =
+                    isAdvancing && roundIndex < roundStates.length - 1 && advancingRank > 0
+                      ? destinationHeatMap.get(`${heatIndex}-${advancingRank}`)
+                      : undefined
 
                   return (
                     <div
                       key={`${heat.id}-slot-${entrantIndex}-${participant?.id ?? 'unassigned'}`}
                       className={`entrant-row ${isAdvancing ? 'advancing' : ''}`}
                     >
-                      <span>{participant ? participant.name : placeholder}</span>
+                      <span className="entrant-label">
+                        <span>{participant ? participant.name : placeholder}</span>
+                        {destinationHeat ? (
+                          <span className="next-destination">{`→ R${roundIndex + 2} H${destinationHeat}`}</span>
+                        ) : null}
+                      </span>
                       {isDisplayMode ? (
                         <span className="lap-value">{participant ? currentValue || '-' : '-'}</span>
                       ) : (
@@ -70,7 +114,8 @@ export const BracketPanel = ({ roundStates, results, isDisplayMode, onSetLaps }:
                 {ranking.hasTie ? <p className="warn">Top qualifying positions must have unique lap totals.</p> : null}
               </section>
             )
-          })}
+          })
+          })()}
           {roundIndex < roundStates.length - 1 && !round.canAdvance ? (
             <p className="locked">Next round stays locked until all lap totals are valid.</p>
           ) : null}
