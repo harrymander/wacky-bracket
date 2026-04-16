@@ -13,7 +13,6 @@ type SetupPanelProps = {
   onExportJson: () => void
   onImportJsonFromFile: (file: File | undefined) => Promise<void>
   onResetState: () => void
-  onOpenDisplayPopout: () => void
   onToggleParticipantsOpen: () => void
   onToggleRoundsOpen: () => void
   onParticipantLinesChange: (value: string) => void
@@ -42,7 +41,6 @@ export const SetupPanel = ({
   onExportJson,
   onImportJsonFromFile,
   onResetState,
-  onOpenDisplayPopout,
   onToggleParticipantsOpen,
   onToggleRoundsOpen,
   onParticipantLinesChange,
@@ -73,9 +71,6 @@ export const SetupPanel = ({
         </label>
         <button type="button" className="ghost" onClick={onResetState}>
           Reset
-        </button>
-        <button type="button" className="ghost" onClick={onOpenDisplayPopout}>
-          Open display popout
         </button>
       </div>
 

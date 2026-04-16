@@ -30,7 +30,6 @@ function App() {
             onExportJson={state.exportJson}
             onImportJsonFromFile={state.importJsonFromFile}
             onResetState={state.resetState}
-            onOpenDisplayPopout={state.openDisplayPopout}
             onToggleParticipantsOpen={state.toggleParticipantsOpen}
             onToggleRoundsOpen={state.toggleRoundsOpen}
             onParticipantLinesChange={state.setParticipantLines}
@@ -52,6 +51,7 @@ function App() {
           roundStates={state.roundStates}
           results={state.results}
           isDisplayMode={isDisplayMode}
+          onOpenDisplayPopout={state.openDisplayPopout}
           onSetLaps={state.setLaps}
         />
       </section>
