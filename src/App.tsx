@@ -395,7 +395,7 @@ function App() {
                     <h4>
                       {heat.label} · Slots {heat.participantSlots}
                     </h4>
-                    {heat.entrants.map((entrant) => {
+                    {heat.entrants.map((entrant, entrantIndex) => {
                       const participant = entrant.participant
                       const placeholder = entrant.source
                         ? `R${entrant.source.fromRound + 1} H${entrant.source.fromHeat + 1} #${entrant.source.rank}`
@@ -413,7 +413,7 @@ function App() {
 
                       return (
                         <div
-                          key={`${heat.id}-${participant?.id || placeholder}`}
+                          key={`${heat.id}-slot-${entrantIndex}-${participant?.id ?? 'unassigned'}`}
                           className={`entrant-row ${isAdvancing ? 'advancing' : ''}`}
                         >
                           <span>{participant ? participant.name : placeholder}</span>
