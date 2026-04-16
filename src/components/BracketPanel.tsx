@@ -84,8 +84,8 @@ const BracketPanelContent = ({ roundStates, results, isDisplayMode, onSetLaps }:
                     <button
                       type="button"
                       className={`ghost heat-focus-button ${isExpanded ? 'compress' : 'expand'}`}
-                      aria-label={isExpanded ? 'Compress heat' : 'Expand heat'}
-                      title={isExpanded ? 'Compress heat' : 'Expand heat'}
+                      aria-label={isExpanded ? 'Minimise heat' : 'Expand heat'}
+                      title={isExpanded ? 'Minimise heat' : 'Expand heat'}
                       onClick={() => setExpandedHeatKey(isExpanded ? null : heatKey)}
                     />
                   </div>
