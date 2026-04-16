@@ -291,11 +291,11 @@ button.ghost {
 }
 
 .heat-focus-button.expand::before {
-  background-image: url("data:image/svg+xml,%3Csvg%20viewBox%3D%270%200%2024%2024%27%20fill%3D%27none%27%20xmlns%3D%27http%3A//www.w3.org/2000/svg%27%3E%3Cpath%20d%3D%27M13%2011L21%203M13%2011L17.5%2011M13%2011V6.5M3%2021L11%2013M11%2013H6.5M11%2013V17.5%27%20stroke%3D%27%23000000%27%20stroke-width%3D%272%27%20stroke-linecap%3D%27round%27%20stroke-linejoin%3D%27round%27/%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml,%3Csvg%20viewBox%3D%270%200%2024%2024%27%20fill%3D%27none%27%20xmlns%3D%27http%3A//www.w3.org/2000/svg%27%3E%3Cpath%20d%3D%27M14%2010L21%203M21%203H16.5M21%203V7.5M10%2014L3%2021M3%2021H7.5M3%2021L3%2016.5%27%20stroke%3D%27%23000000%27%20stroke-width%3D%272%27%20stroke-linecap%3D%27round%27%20stroke-linejoin%3D%27round%27/%3E%3C/svg%3E");
 }
 
 .heat-focus-button.compress::before {
-  background-image: url("data:image/svg+xml,%3Csvg%20viewBox%3D%270%200%2024%2024%27%20fill%3D%27none%27%20xmlns%3D%27http%3A//www.w3.org/2000/svg%27%3E%3Cpath%20d%3D%27M14%2010L21%203M21%203H16.5M21%203V7.5M10%2014L3%2021M3%2021H7.5M3%2021L3%2016.5%27%20stroke%3D%27%23000000%27%20stroke-width%3D%272%27%20stroke-linecap%3D%27round%27%20stroke-linejoin%3D%27round%27/%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml,%3Csvg%20viewBox%3D%270%200%2024%2024%27%20fill%3D%27none%27%20xmlns%3D%27http%3A//www.w3.org/2000/svg%27%3E%3Cpath%20d%3D%27M13%2011L21%203M13%2011L17.5%2011M13%2011V6.5M3%2021L11%2013M11%2013H6.5M11%2013V17.5%27%20stroke%3D%27%23000000%27%20stroke-width%3D%272%27%20stroke-linecap%3D%27round%27%20stroke-linejoin%3D%27round%27/%3E%3C/svg%3E");
 }
 
 .entrant-row {
