@@ -42,17 +42,6 @@ export const RoundsSetupTile = ({
       </div>
       {roundsOpen ? (
         <>
-          <div className="round-controls-head">
-            <div className="io-row">
-              <button type="button" onClick={onAddRound}>
-                Add round
-              </button>
-              <button type="button" className="ghost" onClick={onRemoveRound}>
-                Remove last round
-              </button>
-            </div>
-          </div>
-
           {configurableRounds.map((round, roundIndex) => (
             <article key={round.id} className="round-config-card">
               <label className="round-name-field">
@@ -69,12 +58,6 @@ export const RoundsSetupTile = ({
               <p className="hint">
                 Incoming slots: {totalRoundSlots(round)} · Outgoing qualifiers: {totalRoundOutgoing(round)}
               </p>
-              <div className="io-row">
-                <button type="button" onClick={() => onAddHeat(roundIndex)}>
-                  Add heat
-                </button>
-              </div>
-
               {round.heats.map((heat, heatIndex) => (
                 <div key={heat.id} className="heat-config-row">
                   <strong>{heat.label}</strong>
@@ -109,12 +92,27 @@ export const RoundsSetupTile = ({
                   </button>
                 </div>
               ))}
+              <div className="io-row">
+                <button type="button" onClick={() => onAddHeat(roundIndex)}>
+                  Add heat
+                </button>
+              </div>
             </article>
           ))}
           <article className="round-config-card">
             <strong>Final</strong>
             <p className="hint">Participants (auto-derived): {finalParticipants}</p>
           </article>
+          <div className="round-controls-head">
+            <div className="io-row">
+              <button type="button" onClick={onAddRound}>
+                Add round
+              </button>
+              <button type="button" className="ghost" onClick={onRemoveRound}>
+                Remove last round
+              </button>
+            </div>
+          </div>
         </>
       ) : null}
     </article>
