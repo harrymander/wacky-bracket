@@ -64,8 +64,8 @@ export const useTournamentState = () => {
       .join('\n'),
   )
   const [statusMessage, setStatusMessage] = useState('')
-  const [participantsOpen, setParticipantsOpen] = useState(true)
-  const [roundsOpen, setRoundsOpen] = useState(true)
+  const [participantsOpen, setParticipantsOpen] = useState(false)
+  const [roundsOpen, setRoundsOpen] = useState(false)
 
   const errors = useMemo(() => validateTournament(participants, rounds), [participants, rounds])
   const roundStates = useMemo(() => buildTournament(rounds, participants, results), [rounds, participants, results])
