@@ -15,7 +15,7 @@ export const BracketPanel = ({ roundStates, results, isDisplayMode, onSetLaps }:
         <article key={round.id} className="round-card">
           <header>
             <h3>{round.label}</h3>
-            <p>{round.heats.length} heats</p>
+            <p>{round.heats.length} heat{ round.heats.length == 1 ? "" : "s" }</p>
           </header>
 
           {round.messages.map((message) => (
