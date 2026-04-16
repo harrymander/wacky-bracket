@@ -111,6 +111,11 @@ const BracketPanelContent = ({ roundStates, results, isDisplayMode, onSetLaps }:
                       isAdvancing && roundIndex < roundStates.length - 1 && advancingRank > 0
                         ? destinationHeatMap.get(`${originalHeatIndex}-${advancingRank}`)
                         : undefined
+                    const isFinalRound = roundIndex === roundStates.length - 1
+                    const medalRank =
+                      advancingRank >= 1 && advancingRank <= 3 && (destinationHeat !== undefined || isFinalRound)
+                        ? advancingRank
+                        : 0
 
                     return (
                       <div
@@ -126,9 +131,9 @@ const BracketPanelContent = ({ roundStates, results, isDisplayMode, onSetLaps }:
                           ) : null}
                         </span>
                         <span className="value-with-medal">
-                          {destinationHeat && advancingRank >= 1 && advancingRank <= 3 ? (
-                            <span className={`medal-badge medal-${advancingRank}`} aria-label={`${advancingRank} place`}>
-                              {advancingRank}
+                          {medalRank ? (
+                            <span className={`medal-badge medal-${medalRank}`} aria-label={`${medalRank} place`}>
+                              {medalRank}
                             </span>
                           ) : null}
                           {isDisplayMode ? (
