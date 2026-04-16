@@ -5,10 +5,10 @@ import {
   DEFAULT_ROUNDS,
   buildTournament,
   createHeat,
+  evaluateHeatLaps,
   normalizeRound,
   parseParticipantsFromCsv,
   parseParticipantsFromLines,
-  rankHeat,
   totalRoundOutgoing,
   totalRoundSlots,
   type RoundConfig,
@@ -210,7 +210,7 @@ function App() {
     )
   }
 
-  const setRank = (roundId: string, heatId: string, participantId: string, value: string) => {
+  const setLaps = (roundId: string, heatId: string, participantId: string, value: string) => {
     setResults((previous) => ({
       ...previous,
       [roundId]: {
@@ -437,7 +437,7 @@ function App() {
               ))}
 
               {round.heats.map((heat) => {
-                const ranking = rankHeat(heat, results?.[round.id]?.[heat.id])
+                const ranking = evaluateHeatLaps(heat, results?.[round.id]?.[heat.id])
                 return (
                   <section key={heat.id} className="heat-card">
                     <h4>
@@ -467,24 +467,24 @@ function App() {
                           <span>{participant ? participant.name : placeholder}</span>
                           <input
                             type="number"
-                            min={1}
-                            step={1}
+                            min={0}
+                            step={0.01}
                             disabled={!participant}
                             value={currentValue}
-                            placeholder={participant ? 'Rank' : '-'}
+                            placeholder={participant ? 'Laps' : '-'}
                             onChange={(event) =>
-                              participant && setRank(round.id, heat.id, participant.id, event.target.value)
+                              participant && setLaps(round.id, heat.id, participant.id, event.target.value)
                             }
                           />
                         </div>
                       )
                     })}
-                    {ranking.hasTie ? <p className="warn">Ranks must be unique in this heat.</p> : null}
+                    {ranking.hasTie ? <p className="warn">Lap totals must be unique in this heat.</p> : null}
                   </section>
                 )
               })}
               {roundIndex < roundStates.length - 1 && !round.canAdvance ? (
-                <p className="locked">Next round stays locked until all ranks are valid.</p>
+                <p className="locked">Next round stays locked until all lap totals are valid.</p>
               ) : null}
             </article>
           ))}

@@ -42,7 +42,7 @@ export type TournamentResults = Record<string, Record<string, Record<string, str
 
 type RankedEntrant = {
   entrant: EntrantSlot
-  rank: number
+  laps: number
 }
 
 const MIN_VALUE = 1
@@ -235,7 +235,7 @@ export const validateTournament = (participants: Participant[], rounds: RoundCon
   return errors
 }
 
-export const rankHeat = (
+export const evaluateHeatLaps = (
   heat: HeatState,
   roundResults: Record<string, string> | undefined,
 ): { isComplete: boolean; hasTie: boolean; ranked: RankedEntrant[] } => {
@@ -246,23 +246,23 @@ export const rankHeat = (
 
   const ranked: RankedEntrant[] = withParticipants.map((entrant) => {
     const value = roundResults?.[entrant.participant!.id]
-    const parsed = Number.parseInt(value ?? '', 10)
+    const parsed = Number.parseFloat(value ?? '')
     return {
       entrant,
-      rank: parsed,
+      laps: parsed,
     }
   })
 
-  if (ranked.some((entry) => !Number.isFinite(entry.rank) || entry.rank < 1)) {
+  if (ranked.some((entry) => !Number.isFinite(entry.laps) || entry.laps < 0)) {
     return { isComplete: false, hasTie: false, ranked: [] }
   }
 
-  const ranks = ranked.map((entry) => entry.rank)
-  const hasTie = new Set(ranks).size !== ranks.length
+  const lapsValues = ranked.map((entry) => entry.laps)
+  const hasTie = new Set(lapsValues).size !== lapsValues.length
   return {
     isComplete: true,
     hasTie,
-    ranked: [...ranked].sort((a, b) => a.rank - b.rank),
+    ranked: [...ranked].sort((a, b) => b.laps - a.laps),
   }
 }
 
@@ -330,7 +330,7 @@ export const buildTournament = (
       const advancers: Participant[] = []
 
       heatStates.forEach((heat) => {
-        const ranked = rankHeat(heat, results?.[round.id]?.[heat.id])
+        const ranked = evaluateHeatLaps(heat, results?.[round.id]?.[heat.id])
         if (!ranked.isComplete) {
           state.canAdvance = false
           return
@@ -348,10 +348,10 @@ export const buildTournament = (
       })
 
       if (state.hasTie) {
-        state.messages.push('Duplicate ranks found. Ranks must be unique within each heat.')
+        state.messages.push('Duplicate lap totals found. Lap totals must be unique within each heat.')
       }
       if (!state.canAdvance && !state.hasTie) {
-        state.messages.push('Enter all ranks in this round to unlock the next round.')
+        state.messages.push('Enter laps completed for all entrants in this round to unlock the next round.')
       }
       resolvedAdvancers = state.canAdvance ? advancers : []
     }
