@@ -61,7 +61,7 @@ export const SetupPanel = ({
   }
 
   return (
-    <section className="panel">
+    <>
       <h2>Setup</h2>
       <div className="io-row">
         <button type="button" onClick={onExportJson}>
@@ -113,6 +113,6 @@ export const SetupPanel = ({
       ) : (
         <p className="ok">Configuration is valid.</p>
       )}
-    </section>
+    </>
   )
 }

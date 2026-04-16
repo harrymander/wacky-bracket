@@ -19,37 +19,41 @@ function App() {
       </header>
 
       {!isDisplayMode ? (
-        <SetupPanel
-          rounds={state.rounds}
-          participantLines={state.participantLines}
-          participantsOpen={state.participantsOpen}
-          roundsOpen={state.roundsOpen}
-          statusMessage={state.statusMessage}
-          errors={state.errors}
-          onExportJson={state.exportJson}
-          onImportJsonFromFile={state.importJsonFromFile}
-          onResetState={state.resetState}
-          onOpenDisplayPopout={state.openDisplayPopout}
-          onToggleParticipantsOpen={state.toggleParticipantsOpen}
-          onToggleRoundsOpen={state.toggleRoundsOpen}
-          onParticipantLinesChange={state.setParticipantLines}
-          onApplyParticipants={state.applyParticipants}
-          onImportCsvFromFile={state.importCsvFromFile}
-          onAddRound={state.addRound}
-          onRemoveRound={state.removeRound}
-          onAddHeat={state.addHeat}
-          onRemoveHeat={state.removeHeat}
-          onUpdateRoundLabel={state.updateRoundLabel}
-          onUpdateHeat={state.updateHeat}
-        />
+        <section className="panel">
+          <SetupPanel
+            rounds={state.rounds}
+            participantLines={state.participantLines}
+            participantsOpen={state.participantsOpen}
+            roundsOpen={state.roundsOpen}
+            statusMessage={state.statusMessage}
+            errors={state.errors}
+            onExportJson={state.exportJson}
+            onImportJsonFromFile={state.importJsonFromFile}
+            onResetState={state.resetState}
+            onOpenDisplayPopout={state.openDisplayPopout}
+            onToggleParticipantsOpen={state.toggleParticipantsOpen}
+            onToggleRoundsOpen={state.toggleRoundsOpen}
+            onParticipantLinesChange={state.setParticipantLines}
+            onApplyParticipants={state.applyParticipants}
+            onImportCsvFromFile={state.importCsvFromFile}
+            onAddRound={state.addRound}
+            onRemoveRound={state.removeRound}
+            onAddHeat={state.addHeat}
+            onRemoveHeat={state.removeHeat}
+            onUpdateRoundLabel={state.updateRoundLabel}
+            onUpdateHeat={state.updateHeat}
+          />
+        </section>
       ) : null}
 
-      <BracketPanel
-        roundStates={state.roundStates}
-        results={state.results}
-        isDisplayMode={isDisplayMode}
-        onSetLaps={state.setLaps}
-      />
+      <section className="panel">
+        <BracketPanel
+          roundStates={state.roundStates}
+          results={state.results}
+          isDisplayMode={isDisplayMode}
+          onSetLaps={state.setLaps}
+        />
+      </section>
     </main>
   )
 }

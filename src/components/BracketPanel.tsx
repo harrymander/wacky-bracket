@@ -8,7 +8,7 @@ type BracketPanelProps = {
 }
 
 export const BracketPanel = ({ roundStates, results, isDisplayMode, onSetLaps }: BracketPanelProps) => (
-  <section className="panel">
+  <>
     <h2>Bracket</h2>
     <div className="round-lane">
       {roundStates.map((round, roundIndex) => (
@@ -79,5 +79,5 @@ export const BracketPanel = ({ roundStates, results, isDisplayMode, onSetLaps }:
         </article>
       ))}
     </div>
-  </section>
+  </>
 )
