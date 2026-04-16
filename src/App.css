@@ -35,6 +35,24 @@
   margin-top: 1rem;
 }
 
+.setup-tile {
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 0.75rem;
+  margin-top: 0.9rem;
+}
+
+.setup-tile-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.setup-tile-header h3 {
+  margin: 0;
+}
+
 textarea {
   width: 100%;
   box-sizing: border-box;

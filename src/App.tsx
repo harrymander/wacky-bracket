@@ -67,6 +67,8 @@ function App() {
       .join('\n'),
   )
   const [statusMessage, setStatusMessage] = useState('')
+  const [participantsOpen, setParticipantsOpen] = useState(true)
+  const [roundsOpen, setRoundsOpen] = useState(true)
 
   const errors = useMemo(() => validateTournament(participants, rounds), [participants, rounds])
   const roundStates = useMemo(() => buildTournament(rounds, participants, results), [rounds, participants, results])
@@ -294,92 +296,115 @@ function App() {
           </button>
         </div>
 
-        <label htmlFor="participants" className="participants-label">
-          Participants (one per line)
-        </label>
-        <textarea
-          id="participants"
-          rows={8}
-          value={participantLines}
-          onChange={(event) => setParticipantLines(event.target.value)}
-        />
-        <div className="io-row">
-          <button type="button" onClick={applyParticipants}>
-            Apply participant list
-          </button>
-          <label className="file-button">
-            Import participants CSV
-            <input type="file" accept=".csv,text/csv" onChange={importCsv} />
-          </label>
-        </div>
-
-        <div className="round-controls-head">
-          <h3>Rounds</h3>
-          <div className="io-row">
-            <button type="button" onClick={addRound}>
-              Add round
-            </button>
-            <button type="button" className="ghost" onClick={removeRound}>
-              Remove last round
+        <article className="setup-tile">
+          <div className="setup-tile-header">
+            <h3>Participants</h3>
+            <button type="button" className="ghost" onClick={() => setParticipantsOpen((value) => !value)}>
+              {participantsOpen ? 'Collapse' : 'Expand'}
             </button>
           </div>
-        </div>
-
-        {rounds.map((round, roundIndex) => (
-          <article key={round.id} className="round-config-card">
-            <label className="round-name-field">
-              Round name
-              <input
-                className="round-name-input"
-                type="text"
-                value={round.label}
-                onChange={(event) => updateRoundLabel(roundIndex, event.target.value)}
-                placeholder={`Round ${roundIndex + 1}`}
+          {participantsOpen ? (
+            <>
+              <label htmlFor="participants" className="participants-label">
+                Participants (one per line)
+              </label>
+              <textarea
+                id="participants"
+                rows={8}
+                value={participantLines}
+                onChange={(event) => setParticipantLines(event.target.value)}
               />
-            </label>
-            <p className="hint">
-              Incoming slots: {totalRoundSlots(round)} · Outgoing qualifiers: {totalRoundOutgoing(round)}
-            </p>
-            <div className="io-row">
-              <button type="button" onClick={() => addHeat(roundIndex)}>
-                Add heat
-              </button>
-            </div>
-
-            {round.heats.map((heat, heatIndex) => (
-              <div key={heat.id} className="heat-config-row">
-                <strong>{heat.label}</strong>
-                <label>
-                  Participants
-                  <input
-                    type="number"
-                    min={1}
-                    value={heat.participantSlots}
-                    onChange={(event) => updateHeat(roundIndex, heatIndex, 'participantSlots', event.target.value)}
-                  />
-                </label>
-                <label>
-                  Advance
-                  <input
-                    type="number"
-                    min={1}
-                    value={heat.advanceCount}
-                    disabled={roundIndex === rounds.length - 1}
-                    onChange={(event) => updateHeat(roundIndex, heatIndex, 'advanceCount', event.target.value)}
-                  />
-                </label>
-                <button
-                  type="button"
-                  className="ghost"
-                  disabled={round.heats.length <= 1}
-                  onClick={() => removeHeat(roundIndex, heatIndex)}
-                >
-                  Remove heat
+              <div className="io-row">
+                <button type="button" onClick={applyParticipants}>
+                  Apply participant list
                 </button>
+                <label className="file-button">
+                  Import participants CSV
+                  <input type="file" accept=".csv,text/csv" onChange={importCsv} />
+                </label>
               </div>
-            ))}
-          </article>
-        ))}
+            </>
+          ) : null}
+        </article>
+
+        <article className="setup-tile">
+          <div className="setup-tile-header">
+            <h3>Rounds</h3>
+            <button type="button" className="ghost" onClick={() => setRoundsOpen((value) => !value)}>
+              {roundsOpen ? 'Collapse' : 'Expand'}
+            </button>
+          </div>
+          {roundsOpen ? (
+            <>
+              <div className="round-controls-head">
+                <div className="io-row">
+                  <button type="button" onClick={addRound}>
+                    Add round
+                  </button>
+                  <button type="button" className="ghost" onClick={removeRound}>
+                    Remove last round
+                  </button>
+                </div>
+              </div>
+
+              {rounds.map((round, roundIndex) => (
+                <article key={round.id} className="round-config-card">
+                  <label className="round-name-field">
+                    Round name
+                    <input
+                      className="round-name-input"
+                      type="text"
+                      value={round.label}
+                      onChange={(event) => updateRoundLabel(roundIndex, event.target.value)}
+                      placeholder={`Round ${roundIndex + 1}`}
+                    />
+                  </label>
+                  <p className="hint">
+                    Incoming slots: {totalRoundSlots(round)} · Outgoing qualifiers: {totalRoundOutgoing(round)}
+                  </p>
+                  <div className="io-row">
+                    <button type="button" onClick={() => addHeat(roundIndex)}>
+                      Add heat
+                    </button>
+                  </div>
+
+                  {round.heats.map((heat, heatIndex) => (
+                    <div key={heat.id} className="heat-config-row">
+                      <strong>{heat.label}</strong>
+                      <label>
+                        Participants
+                        <input
+                          type="number"
+                          min={1}
+                          value={heat.participantSlots}
+                          onChange={(event) => updateHeat(roundIndex, heatIndex, 'participantSlots', event.target.value)}
+                        />
+                      </label>
+                      <label>
+                        Advance
+                        <input
+                          type="number"
+                          min={1}
+                          value={heat.advanceCount}
+                          disabled={roundIndex === rounds.length - 1}
+                          onChange={(event) => updateHeat(roundIndex, heatIndex, 'advanceCount', event.target.value)}
+                        />
+                      </label>
+                      <button
+                        type="button"
+                        className="ghost"
+                        disabled={round.heats.length <= 1}
+                        onClick={() => removeHeat(roundIndex, heatIndex)}
+                      >
+                        Remove heat
+                      </button>
+                    </div>
+                  ))}
+                </article>
+              ))}
+            </>
+          ) : null}
+        </article>
 
         {statusMessage ? <p className="status">{statusMessage}</p> : null}
         {errors.length > 0 ? (
