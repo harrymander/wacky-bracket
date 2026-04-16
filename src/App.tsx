@@ -193,6 +193,21 @@ function App() {
     setResults({})
   }
 
+  const updateRoundLabel = (roundIndex: number, value: string) => {
+    clearStatus()
+    setRounds((previous) =>
+      previous.map((round, currentRoundIndex) => {
+        if (currentRoundIndex !== roundIndex) {
+          return round
+        }
+        return {
+          ...round,
+          label: value,
+        }
+      }),
+    )
+  }
+
   const setRank = (roundId: string, heatId: string, participantId: string, value: string) => {
     setResults((previous) => ({
       ...previous,
@@ -312,7 +327,16 @@ function App() {
 
         {rounds.map((round, roundIndex) => (
           <article key={round.id} className="round-config-card">
-            <h4>{round.label}</h4>
+            <label className="round-name-field">
+              Round name
+              <input
+                className="round-name-input"
+                type="text"
+                value={round.label}
+                onChange={(event) => updateRoundLabel(roundIndex, event.target.value)}
+                placeholder={`Round ${roundIndex + 1}`}
+              />
+            </label>
             <p className="hint">
               Incoming slots: {totalRoundSlots(round)} · Outgoing qualifiers: {totalRoundOutgoing(round)}
             </p>

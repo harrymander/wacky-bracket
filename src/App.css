@@ -96,6 +96,20 @@ button.ghost {
   margin: 0;
 }
 
+.round-name-field {
+  display: grid;
+  gap: 0.3rem;
+  font-size: 0.92rem;
+  max-width: 320px;
+}
+
+.round-name-input {
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  padding: 0.45rem 0.6rem;
+  font: inherit;
+}
+
 .hint {
   margin: 0.5rem 0 0;
   color: #475569;
