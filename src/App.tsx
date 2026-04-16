@@ -277,8 +277,7 @@ function App() {
   return (
     <main className="app">
       <header className="page-header">
-        <h1>wacky-bracket</h1>
-        <p>Each heat has its own participant count and its own number of qualifiers.</p>
+        <h1>Wacky Racers</h1>
       </header>
 
       <section className="panel">
@@ -422,7 +421,7 @@ function App() {
       </section>
 
       <section className="panel">
-        <h2>Bracket (Race ranks)</h2>
+        <h2>Bracket</h2>
         <div className="round-lane">
           {roundStates.map((round, roundIndex) => (
             <article key={round.id} className="round-card">
