@@ -82,14 +82,11 @@ export const RoundsSetupTile = ({
                       onChange={(event) => onUpdateHeat(roundIndex, heatIndex, 'advanceCount', event.target.value)}
                     />
                   </label>
-                  <button
-                    type="button"
-                    className="ghost"
-                    disabled={round.heats.length <= 1}
-                    onClick={() => onRemoveHeat(roundIndex, heatIndex)}
-                  >
-                    Remove heat
-                  </button>
+                  {round.heats.length > 1 ? (
+                    <button type="button" className="ghost" onClick={() => onRemoveHeat(roundIndex, heatIndex)}>
+                      Remove heat
+                    </button>
+                  ) : null}
                 </div>
               ))}
               <div className="io-row">
@@ -108,9 +105,11 @@ export const RoundsSetupTile = ({
               <button type="button" onClick={onAddRound}>
                 Add round
               </button>
-              <button type="button" className="ghost" onClick={onRemoveRound}>
-                Remove last round
-              </button>
+              {configurableRounds.length > 1 ? (
+                <button type="button" className="ghost" onClick={onRemoveRound}>
+                  Remove last round
+                </button>
+              ) : null}
             </div>
           </div>
         </>
