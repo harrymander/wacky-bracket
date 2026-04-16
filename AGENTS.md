@@ -1,5 +1,7 @@
 # AGENTS.md
 
+Inspect `README.md` for more information on the project and code structure.
+
 ## Project workflow
 
 - Keep changes focused and scoped to the requested feature or bug fix.
