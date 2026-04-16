@@ -332,6 +332,19 @@ button.ghost {
   flex-wrap: wrap;
 }
 
+.rank-marker {
+  flex: 0 0 auto;
+}
+
+.rank-badge {
+  display: inline-block;
+  min-width: 0.9rem;
+  text-align: right;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #334155;
+}
+
 .next-destination {
   font-size: 0.82rem;
   color: #1d4ed8;

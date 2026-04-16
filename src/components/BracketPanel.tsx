@@ -73,6 +73,22 @@ const BracketPanelContent = ({ roundStates, results, isDisplayMode, onSetLaps }:
 
             {visibleHeats.map((heat) => {
               const ranking = evaluateHeatLaps(heat, results?.[round.id]?.[heat.id])
+              const rankByParticipantId = new Map(
+                ranking.ranked
+                  .map((entry, index) => {
+                    const id = entry.entrant.participant?.id
+                    return id ? ([id, index + 1] as const) : null
+                  })
+                  .filter((value): value is readonly [string, number] => value !== null),
+              )
+              const orderedEntrants = [...heat.entrants].sort((a, b) => {
+                if (!isDisplayMode) {
+                  return 0
+                }
+                const rankA = a.participant ? (rankByParticipantId.get(a.participant.id) ?? Number.MAX_SAFE_INTEGER) : Number.MAX_SAFE_INTEGER
+                const rankB = b.participant ? (rankByParticipantId.get(b.participant.id) ?? Number.MAX_SAFE_INTEGER) : Number.MAX_SAFE_INTEGER
+                return rankA - rankB
+              })
               const originalHeatIndex = round.heats.findIndex((candidate) => candidate.id === heat.id)
               const heatKey = `${round.id}:${heat.id}`
               const isExpanded = expandedHeatKey === heatKey
@@ -95,7 +111,7 @@ const BracketPanelContent = ({ roundStates, results, isDisplayMode, onSetLaps }:
                       <span>Laps</span>
                     </div>
                   ) : null}
-                  {heat.entrants.map((entrant, entrantIndex) => {
+                  {orderedEntrants.map((entrant, entrantIndex) => {
                     const participant = entrant.participant
                     const placeholder = entrant.source
                       ? `R${entrant.source.fromRound + 1} H${entrant.source.fromHeat + 1} #${entrant.source.rank}`
@@ -122,6 +138,7 @@ const BracketPanelContent = ({ roundStates, results, isDisplayMode, onSetLaps }:
                       advancingRank >= 1 && advancingRank <= 3 && (destinationHeat !== undefined || isFinalRound)
                         ? advancingRank
                         : 0
+                    const displayRank = isDisplayMode && participant && advancingRank > 0 ? advancingRank : null
 
                     return (
                       <div
@@ -129,6 +146,15 @@ const BracketPanelContent = ({ roundStates, results, isDisplayMode, onSetLaps }:
                         className={`entrant-row ${isAdvancing ? 'advancing' : ''}`}
                       >
                         <span className="entrant-label">
+                          {isDisplayMode ? (
+                            displayRank && displayRank <= 3 ? (
+                              <span className={`medal-badge medal-${displayRank} rank-marker`} aria-label={`${displayRank} place`}>
+                                {displayRank}
+                              </span>
+                            ) : (
+                              <span className="rank-badge rank-marker">{displayRank ?? '-'}</span>
+                            )
+                          ) : null}
                           <span>{participant ? participant.name : placeholder}</span>
                           {destinationHeat ? (
                             <span className="next-destination">
@@ -137,7 +163,7 @@ const BracketPanelContent = ({ roundStates, results, isDisplayMode, onSetLaps }:
                           ) : null}
                         </span>
                         <span className="value-with-medal">
-                          {medalRank ? (
+                          {!isDisplayMode && medalRank ? (
                             <span className={`medal-badge medal-${medalRank}`} aria-label={`${medalRank} place`}>
                               {medalRank}
                             </span>
