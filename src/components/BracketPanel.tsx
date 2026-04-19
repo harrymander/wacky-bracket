@@ -161,7 +161,7 @@ const BracketPanelContent = ({ roundStates, results, isDisplayMode, onSetLaps }:
               const originalHeatIndex = round.heats.findIndex((candidate) => candidate.id === heat.id)
               const heatKey = `${round.id}:${heat.id}`
               const isExpanded = expandedHeatKey === heatKey
-              const isCollapsed = collapsedHeatKeys.has(heatKey)
+              const isCollapsed = !isExpanded && collapsedHeatKeys.has(heatKey)
               const isCompleted = ranking.isComplete && !ranking.hasTie
 
               return (
@@ -196,19 +196,7 @@ const BracketPanelContent = ({ roundStates, results, isDisplayMode, onSetLaps }:
                         className={`ghost heat-focus-button ${isExpanded ? 'compress' : 'expand'}`}
                         aria-label={isExpanded ? 'Minimise heat' : 'Maximise heat'}
                         title={isExpanded ? 'Minimise heat' : 'Maximise heat'}
-                        onClick={() => {
-                          setExpandedHeatKey(isExpanded ? null : heatKey)
-                          if (!isExpanded) {
-                            setCollapsedHeatKeys((current) => {
-                              if (!current.has(heatKey)) {
-                                return current
-                              }
-                              const next = new Set(current)
-                              next.delete(heatKey)
-                              return next
-                            })
-                          }
-                        }}
+                        onClick={() => setExpandedHeatKey(isExpanded ? null : heatKey)}
                       />
                     </div>
                   </div>
