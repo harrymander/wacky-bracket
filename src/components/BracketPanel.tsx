@@ -44,10 +44,15 @@ export const BracketPanel = ({ roundStates, results, isDisplayMode, onSetLaps }:
 
 const BracketPanelContent = ({ roundStates, results, isDisplayMode, onSetLaps }: BracketPanelProps) => {
   const [expandedHeatKey, setExpandedHeatKey] = useState<string | null>(null)
+  const [expandedRoundId, setExpandedRoundId] = useState<string | null>(null)
 
   return (
-    <div className={`round-lane ${expandedHeatKey ? 'focus-mode' : ''}`}>
+    <div className={`round-lane ${expandedHeatKey || expandedRoundId ? 'focus-mode' : ''}`}>
       {roundStates.map((round, roundIndex) => {
+        if (expandedRoundId !== null && expandedRoundId !== round.id) {
+          return null
+        }
+
         const visibleHeats =
           expandedHeatKey === null ? round.heats : round.heats.filter((heat) => `${round.id}:${heat.id}` === expandedHeatKey)
         if (visibleHeats.length === 0) {
@@ -55,12 +60,25 @@ const BracketPanelContent = ({ roundStates, results, isDisplayMode, onSetLaps }:
         }
 
         const destinationHeatMap = buildDestinationHeatMap(roundStates, roundIndex)
+        const isRoundExpanded = expandedRoundId === round.id
 
         return (
-          <article key={round.id} className={`round-card ${expandedHeatKey ? 'focus-mode' : ''}`}>
-            <header>
+          <article key={round.id} className={`round-card ${expandedHeatKey || isRoundExpanded ? 'focus-mode' : ''}`}>
+            <header className="round-header">
               <h3>{round.label}</h3>
-              {!expandedHeatKey && roundIndex < roundStates.length - 1 ? (
+              <button
+                type="button"
+                className={`ghost round-focus-button ${isRoundExpanded ? 'compress' : 'expand'}`}
+                aria-label={isRoundExpanded ? 'Minimise round' : 'Expand round'}
+                title={isRoundExpanded ? 'Minimise round' : 'Expand round'}
+                onClick={() => {
+                  setExpandedRoundId(isRoundExpanded ? null : round.id)
+                  if (!isRoundExpanded) {
+                    setExpandedHeatKey(null)
+                  }
+                }}
+              />
+              {!expandedHeatKey && !isRoundExpanded && roundIndex < roundStates.length - 1 ? (
                 <p>{visibleHeats.length} heat{visibleHeats.length === 1 ? '' : 's'}</p>
               ) : null}
             </header>
