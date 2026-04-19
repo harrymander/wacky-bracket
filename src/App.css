@@ -264,6 +264,11 @@ button.ghost {
   justify-content: center;
 }
 
+.round-bulk-button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
 .round-bulk-button::before {
   content: '';
   width: 16px;

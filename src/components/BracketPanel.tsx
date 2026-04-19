@@ -87,7 +87,7 @@ const BracketPanelContent = ({ roundStates, results, isDisplayMode, onSetLaps }:
                   className="ghost round-bulk-button expand-all"
                   aria-label="Expand all heats"
                   title="Expand all heats"
-                  disabled={allRoundHeatsCollapsed}
+                  disabled={allRoundHeatsExpanded}
                   onClick={() =>
                     setCollapsedHeatKeys((current) => {
                       const next = new Set(current)
@@ -101,7 +101,7 @@ const BracketPanelContent = ({ roundStates, results, isDisplayMode, onSetLaps }:
                   className="ghost round-bulk-button collapse-all"
                   aria-label="Collapse all heats"
                   title="Collapse all heats"
-                  disabled={allRoundHeatsExpanded}
+                  disabled={allRoundHeatsCollapsed}
                   onClick={() =>
                     setCollapsedHeatKeys((current) => {
                       const next = new Set(current)
