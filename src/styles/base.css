@@ -1,0 +1,33 @@
+textarea {
+  width: 100%;
+  box-sizing: border-box;
+  margin-top: 0.45rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  padding: 0.6rem;
+  font: inherit;
+}
+
+button,
+.file-button {
+  border: 1px solid #cbd5e1;
+  background: #f8fafc;
+  color: #0f172a;
+  border-radius: 8px;
+  padding: 0.45rem 0.75rem;
+  font: inherit;
+  cursor: pointer;
+}
+
+button.ghost {
+  background: transparent;
+}
+
+.file-button {
+  display: inline-flex;
+  align-items: center;
+}
+
+.file-button input {
+  display: none;
+}

@@ -1,5 +1,5 @@
 import { useMemo } from 'react'
-import './App.css'
+import './styles/index.css'
 import { BracketPanel } from './components/BracketPanel'
 import { SetupPanel } from './components/SetupPanel'
 import { useTournamentState } from './hooks/useTournamentState'
