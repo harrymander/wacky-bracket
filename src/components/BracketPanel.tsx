@@ -80,7 +80,7 @@ const BracketPanelContent = ({ roundStates, results, isDisplayMode, onSetLaps }:
                   }}
                 />
               ) : null}
-              {!expandedHeatKey && !isRoundExpanded && roundIndex < roundStates.length - 1 ? (
+              {!expandedHeatKey && roundIndex < roundStates.length - 1 ? (
                 <p>{visibleHeats.length} heat{visibleHeats.length === 1 ? '' : 's'}</p>
               ) : null}
             </header>
