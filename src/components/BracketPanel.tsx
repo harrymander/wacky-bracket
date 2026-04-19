@@ -38,13 +38,25 @@ const buildDestinationHeatMap = (roundStates: RoundState[], roundIndex: number) 
   return map
 }
 
+const buildAllHeatKeys = (roundStates: RoundState[]) =>
+  roundStates.flatMap((round) => round.heats.map((heat) => `${round.id}:${heat.id}`))
+
 export const BracketPanel = ({ roundStates, results, isDisplayMode, onSetLaps }: BracketPanelProps) => (
-  <BracketPanelContent roundStates={roundStates} results={results} isDisplayMode={isDisplayMode} onSetLaps={onSetLaps} />
+  <BracketPanelContent
+    key={isDisplayMode ? 'display-mode' : 'edit-mode'}
+    roundStates={roundStates}
+    results={results}
+    isDisplayMode={isDisplayMode}
+    onSetLaps={onSetLaps}
+  />
 )
 
 const BracketPanelContent = ({ roundStates, results, isDisplayMode, onSetLaps }: BracketPanelProps) => {
   const [expandedHeatKey, setExpandedHeatKey] = useState<string | null>(null)
   const [expandedRoundId, setExpandedRoundId] = useState<string | null>(null)
+  const [collapsedHeatKeys, setCollapsedHeatKeys] = useState<Set<string>>(
+    () => (isDisplayMode ? new Set(buildAllHeatKeys(roundStates)) : new Set()),
+  )
 
   return (
     <div className={`round-lane ${expandedHeatKey || expandedRoundId ? 'focus-mode' : ''}`}>
@@ -61,11 +73,44 @@ const BracketPanelContent = ({ roundStates, results, isDisplayMode, onSetLaps }:
 
         const destinationHeatMap = buildDestinationHeatMap(roundStates, roundIndex)
         const isRoundExpanded = expandedRoundId === round.id
+        const roundHeatKeys = round.heats.map((heat) => `${round.id}:${heat.id}`)
+        const allRoundHeatsCollapsed = roundHeatKeys.every((heatKey) => collapsedHeatKeys.has(heatKey))
+        const allRoundHeatsExpanded = roundHeatKeys.every((heatKey) => !collapsedHeatKeys.has(heatKey))
 
         return (
           <article key={round.id} className={`round-card ${expandedHeatKey || isRoundExpanded ? 'focus-mode' : ''}`}>
             <header className="round-header">
               <h3>{round.label}</h3>
+              <div className="round-bulk-controls">
+                <button
+                  type="button"
+                  className="ghost round-bulk-button expand-all"
+                  aria-label="Expand all heats"
+                  title="Expand all heats"
+                  disabled={allRoundHeatsExpanded}
+                  onClick={() =>
+                    setCollapsedHeatKeys((current) => {
+                      const next = new Set(current)
+                      roundHeatKeys.forEach((heatKey) => next.delete(heatKey))
+                      return next
+                    })
+                  }
+                />
+                <button
+                  type="button"
+                  className="ghost round-bulk-button collapse-all"
+                  aria-label="Collapse all heats"
+                  title="Collapse all heats"
+                  disabled={allRoundHeatsCollapsed}
+                  onClick={() =>
+                    setCollapsedHeatKeys((current) => {
+                      const next = new Set(current)
+                      roundHeatKeys.forEach((heatKey) => next.add(heatKey))
+                      return next
+                    })
+                  }
+                />
+              </div>
               {!expandedHeatKey ? (
                 <button
                   type="button"
@@ -112,101 +157,141 @@ const BracketPanelContent = ({ roundStates, results, isDisplayMode, onSetLaps }:
               const originalHeatIndex = round.heats.findIndex((candidate) => candidate.id === heat.id)
               const heatKey = `${round.id}:${heat.id}`
               const isExpanded = expandedHeatKey === heatKey
+              const isCollapsed = collapsedHeatKeys.has(heatKey)
+              const isCompleted = ranking.isComplete && !ranking.hasTie
 
               return (
-                <section key={heat.id} className={`heat-card ${isExpanded ? 'focus-mode' : ''}`}>
+                <section
+                  key={heat.id}
+                  className={`heat-card ${isExpanded ? 'focus-mode' : ''} ${isCollapsed ? 'collapsed' : ''} ${isCollapsed && isCompleted ? 'complete' : ''}`}
+                >
                   <div className="heat-header">
                     {roundIndex < roundStates.length - 1 ? <h4>{heat.label}</h4> : <h4>{round.label}</h4>}
-                    <button
-                      type="button"
-                      className={`ghost heat-focus-button ${isExpanded ? 'compress' : 'expand'}`}
-                      aria-label={isExpanded ? 'Minimise heat' : 'Expand heat'}
-                      title={isExpanded ? 'Minimise heat' : 'Expand heat'}
-                      onClick={() => setExpandedHeatKey(isExpanded ? null : heatKey)}
-                    />
-                  </div>
-                  {isDisplayMode ? (
-                    <div className="laps-column-header" aria-hidden="true">
-                      <span />
-                      <span>Laps</span>
+                    <div className="heat-header-controls">
+                      <button
+                        type="button"
+                        className={`ghost heat-collapse-button ${isCollapsed ? 'expand' : 'collapse'}`}
+                        aria-label={isCollapsed ? 'Expand heat' : 'Collapse heat'}
+                        title={isCollapsed ? 'Expand heat' : 'Collapse heat'}
+                        onClick={() =>
+                          setCollapsedHeatKeys((current) => {
+                            const next = new Set(current)
+                            if (next.has(heatKey)) {
+                              next.delete(heatKey)
+                            } else {
+                              next.add(heatKey)
+                            }
+                            return next
+                          })
+                        }
+                      />
+                      <button
+                        type="button"
+                        className={`ghost heat-focus-button ${isExpanded ? 'compress' : 'expand'}`}
+                        aria-label={isExpanded ? 'Minimise heat' : 'Maximise heat'}
+                        title={isExpanded ? 'Minimise heat' : 'Maximise heat'}
+                        onClick={() => {
+                          setExpandedHeatKey(isExpanded ? null : heatKey)
+                          if (!isExpanded) {
+                            setCollapsedHeatKeys((current) => {
+                              if (!current.has(heatKey)) {
+                                return current
+                              }
+                              const next = new Set(current)
+                              next.delete(heatKey)
+                              return next
+                            })
+                          }
+                        }}
+                      />
                     </div>
-                  ) : null}
-                  {orderedEntrants.map((entrant, entrantIndex) => {
-                    const participant = entrant.participant
-                    const placeholder = entrant.source
-                      ? `R${entrant.source.fromRound + 1} H${entrant.source.fromHeat + 1} #${entrant.source.rank}`
-                      : 'Unassigned'
-                    const currentValue =
-                      participant && results?.[round.id]?.[heat.id]?.[participant.id]
-                        ? results[round.id][heat.id][participant.id]
-                        : ''
-                    const isAdvancing =
-                      ranking.isComplete &&
-                      !ranking.hasTie &&
-                      ranking.ranked
-                        .slice(0, heat.advanceCount)
-                        .some((entry) => entry.entrant.participant?.id === participant?.id)
-                    const advancingRank = participant
-                      ? ranking.ranked.findIndex((entry) => entry.entrant.participant?.id === participant.id) + 1
-                      : 0
-                    const destinationHeat =
-                      isAdvancing && roundIndex < roundStates.length - 1 && advancingRank > 0
-                        ? destinationHeatMap.get(`${originalHeatIndex}-${advancingRank}`)
-                        : undefined
-                    const isFinalRound = roundIndex === roundStates.length - 1
-                    const medalRank =
-                      advancingRank >= 1 && advancingRank <= 3 && (destinationHeat !== undefined || isFinalRound)
-                        ? advancingRank
-                        : 0
-                    const displayRank = isDisplayMode && participant && advancingRank > 0 ? advancingRank : null
+                  </div>
+                  {!isCollapsed ? (
+                    <>
+                      {isDisplayMode ? (
+                        <div className="laps-column-header" aria-hidden="true">
+                          <span />
+                          <span>Laps</span>
+                        </div>
+                      ) : null}
+                      {orderedEntrants.map((entrant, entrantIndex) => {
+                        const participant = entrant.participant
+                        const placeholder = entrant.source
+                          ? `R${entrant.source.fromRound + 1} H${entrant.source.fromHeat + 1} #${entrant.source.rank}`
+                          : 'Unassigned'
+                        const currentValue =
+                          participant && results?.[round.id]?.[heat.id]?.[participant.id]
+                            ? results[round.id][heat.id][participant.id]
+                            : ''
+                        const isAdvancing =
+                          ranking.isComplete &&
+                          !ranking.hasTie &&
+                          ranking.ranked
+                            .slice(0, heat.advanceCount)
+                            .some((entry) => entry.entrant.participant?.id === participant?.id)
+                        const advancingRank = participant
+                          ? ranking.ranked.findIndex((entry) => entry.entrant.participant?.id === participant.id) + 1
+                          : 0
+                        const destinationHeat =
+                          isAdvancing && roundIndex < roundStates.length - 1 && advancingRank > 0
+                            ? destinationHeatMap.get(`${originalHeatIndex}-${advancingRank}`)
+                            : undefined
+                        const isFinalRound = roundIndex === roundStates.length - 1
+                        const medalRank =
+                          advancingRank >= 1 && advancingRank <= 3 && (destinationHeat !== undefined || isFinalRound)
+                            ? advancingRank
+                            : 0
+                        const displayRank = isDisplayMode && participant && advancingRank > 0 ? advancingRank : null
 
-                    return (
-                      <div
-                        key={`${heat.id}-slot-${entrantIndex}-${participant?.id ?? 'unassigned'}`}
-                        className={`entrant-row ${isAdvancing ? 'advancing' : ''}`}
-                      >
-                        <span className="entrant-label">
-                          {isDisplayMode ? (
-                            displayRank && displayRank <= 3 ? (
-                              <span className={`medal-badge medal-${displayRank} rank-marker`} aria-label={`${displayRank} place`}>
-                                {displayRank}
-                              </span>
-                            ) : (
-                              <span className="rank-badge rank-marker">{displayRank ?? '-'}</span>
-                            )
-                          ) : null}
-                          <span>{participant ? participant.name : placeholder}</span>
-                          {destinationHeat ? (
-                            <span className="next-destination">
-                              {roundIndex + 1 === roundStates.length - 1 ? `→ F` : `→ R${roundIndex + 2} H${destinationHeat}`}
+                        return (
+                          <div
+                            key={`${heat.id}-slot-${entrantIndex}-${participant?.id ?? 'unassigned'}`}
+                            className={`entrant-row ${isAdvancing ? 'advancing' : ''}`}
+                          >
+                            <span className="entrant-label">
+                              {isDisplayMode ? (
+                                displayRank && displayRank <= 3 ? (
+                                  <span className={`medal-badge medal-${displayRank} rank-marker`} aria-label={`${displayRank} place`}>
+                                    {displayRank}
+                                  </span>
+                                ) : (
+                                  <span className="rank-badge rank-marker">{displayRank ?? '-'}</span>
+                                )
+                              ) : null}
+                              <span>{participant ? participant.name : placeholder}</span>
+                              {destinationHeat ? (
+                                <span className="next-destination">
+                                  {roundIndex + 1 === roundStates.length - 1 ? `→ F` : `→ R${roundIndex + 2} H${destinationHeat}`}
+                                </span>
+                              ) : null}
                             </span>
-                          ) : null}
-                        </span>
-                        <span className="value-with-medal">
-                          {!isDisplayMode && medalRank ? (
-                            <span className={`medal-badge medal-${medalRank}`} aria-label={`${medalRank} place`}>
-                              {medalRank}
+                            <span className="value-with-medal">
+                              {!isDisplayMode && medalRank ? (
+                                <span className={`medal-badge medal-${medalRank}`} aria-label={`${medalRank} place`}>
+                                  {medalRank}
+                                </span>
+                              ) : null}
+                              {isDisplayMode ? (
+                                <span className="lap-value">{participant ? currentValue || '-' : '-'}</span>
+                              ) : (
+                                <input
+                                  type="number"
+                                  name={`laps-${round.id}-${heat.id}-${participant?.id ?? `slot-${entrantIndex}`}`}
+                                  min={0}
+                                  step={0.25}
+                                  disabled={!participant}
+                                  value={currentValue}
+                                  placeholder={participant ? 'Laps' : '-'}
+                                  onChange={(event) => participant && onSetLaps(round.id, heat.id, participant.id, event.target.value)}
+                                />
+                              )}
                             </span>
-                          ) : null}
-                          {isDisplayMode ? (
-                            <span className="lap-value">{participant ? currentValue || '-' : '-'}</span>
-                          ) : (
-                            <input
-                              type="number"
-                              name={`laps-${round.id}-${heat.id}-${participant?.id ?? `slot-${entrantIndex}`}`}
-                              min={0}
-                              step={0.25}
-                              disabled={!participant}
-                              value={currentValue}
-                              placeholder={participant ? 'Laps' : '-'}
-                              onChange={(event) => participant && onSetLaps(round.id, heat.id, participant.id, event.target.value)}
-                            />
-                          )}
-                        </span>
-                      </div>
-                    )
-                  })}
-                  {ranking.hasTie ? <p className="warn">Top qualifying positions must have unique lap totals.</p> : null}
+                          </div>
+                        )
+                      })}
+                      {ranking.hasTie ? <p className="warn">Top qualifying positions must have unique lap totals.</p> : null}
+                    </>
+                  ) : null}
                 </section>
               )
             })}
