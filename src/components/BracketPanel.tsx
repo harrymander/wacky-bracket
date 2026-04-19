@@ -168,23 +168,25 @@ const BracketPanelContent = ({ roundStates, results, isDisplayMode, onSetLaps }:
                   <div className="heat-header">
                     {roundIndex < roundStates.length - 1 ? <h4>{heat.label}</h4> : <h4>{round.label}</h4>}
                     <div className="heat-header-controls">
-                      <button
-                        type="button"
-                        className={`ghost heat-collapse-button ${isCollapsed ? 'expand' : 'collapse'}`}
-                        aria-label={isCollapsed ? 'Expand heat' : 'Collapse heat'}
-                        title={isCollapsed ? 'Expand heat' : 'Collapse heat'}
-                        onClick={() =>
-                          setCollapsedHeatKeys((current) => {
-                            const next = new Set(current)
-                            if (next.has(heatKey)) {
-                              next.delete(heatKey)
-                            } else {
-                              next.add(heatKey)
-                            }
-                            return next
-                          })
-                        }
-                      />
+                      {!isExpanded ? (
+                        <button
+                          type="button"
+                          className={`ghost heat-collapse-button ${isCollapsed ? 'expand' : 'collapse'}`}
+                          aria-label={isCollapsed ? 'Expand heat' : 'Collapse heat'}
+                          title={isCollapsed ? 'Expand heat' : 'Collapse heat'}
+                          onClick={() =>
+                            setCollapsedHeatKeys((current) => {
+                              const next = new Set(current)
+                              if (next.has(heatKey)) {
+                                next.delete(heatKey)
+                              } else {
+                                next.add(heatKey)
+                              }
+                              return next
+                            })
+                          }
+                        />
+                      ) : null}
                       <button
                         type="button"
                         className={`ghost heat-focus-button ${isExpanded ? 'compress' : 'expand'}`}
