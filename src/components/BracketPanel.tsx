@@ -66,18 +66,20 @@ const BracketPanelContent = ({ roundStates, results, isDisplayMode, onSetLaps }:
           <article key={round.id} className={`round-card ${expandedHeatKey || isRoundExpanded ? 'focus-mode' : ''}`}>
             <header className="round-header">
               <h3>{round.label}</h3>
-              <button
-                type="button"
-                className={`ghost round-focus-button ${isRoundExpanded ? 'compress' : 'expand'}`}
-                aria-label={isRoundExpanded ? 'Minimise round' : 'Expand round'}
-                title={isRoundExpanded ? 'Minimise round' : 'Expand round'}
-                onClick={() => {
-                  setExpandedRoundId(isRoundExpanded ? null : round.id)
-                  if (!isRoundExpanded) {
-                    setExpandedHeatKey(null)
-                  }
-                }}
-              />
+              {!expandedHeatKey ? (
+                <button
+                  type="button"
+                  className={`ghost round-focus-button ${isRoundExpanded ? 'compress' : 'expand'}`}
+                  aria-label={isRoundExpanded ? 'Minimise round' : 'Expand round'}
+                  title={isRoundExpanded ? 'Minimise round' : 'Expand round'}
+                  onClick={() => {
+                    setExpandedRoundId(isRoundExpanded ? null : round.id)
+                    if (!isRoundExpanded) {
+                      setExpandedHeatKey(null)
+                    }
+                  }}
+                />
+              ) : null}
               {!expandedHeatKey && !isRoundExpanded && roundIndex < roundStates.length - 1 ? (
                 <p>{visibleHeats.length} heat{visibleHeats.length === 1 ? '' : 's'}</p>
               ) : null}
