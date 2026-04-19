@@ -419,6 +419,12 @@ button.ghost {
   padding-bottom: 0.55rem;
 }
 
+.heat-card.collapsed .heat-header h4 {
+  min-height: 34px;
+  display: inline-flex;
+  align-items: center;
+}
+
 .heat-card.collapsed.complete {
   background: #ecfdf5;
   border-color: #86efac;
