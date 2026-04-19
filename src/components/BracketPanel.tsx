@@ -81,36 +81,38 @@ const BracketPanelContent = ({ roundStates, results, isDisplayMode, onSetLaps }:
           <article key={round.id} className={`round-card ${expandedHeatKey || isRoundExpanded ? 'focus-mode' : ''}`}>
             <header className="round-header">
               <h3>{round.label}</h3>
-              <div className="round-bulk-controls">
-                <button
-                  type="button"
-                  className="ghost round-bulk-button expand-all"
-                  aria-label="Expand all heats"
-                  title="Expand all heats"
-                  disabled={allRoundHeatsExpanded}
-                  onClick={() =>
-                    setCollapsedHeatKeys((current) => {
-                      const next = new Set(current)
-                      roundHeatKeys.forEach((heatKey) => next.delete(heatKey))
-                      return next
-                    })
-                  }
-                />
-                <button
-                  type="button"
-                  className="ghost round-bulk-button collapse-all"
-                  aria-label="Collapse all heats"
-                  title="Collapse all heats"
-                  disabled={allRoundHeatsCollapsed}
-                  onClick={() =>
-                    setCollapsedHeatKeys((current) => {
-                      const next = new Set(current)
-                      roundHeatKeys.forEach((heatKey) => next.add(heatKey))
-                      return next
-                    })
-                  }
-                />
-              </div>
+              {!expandedHeatKey ? (
+                <div className="round-bulk-controls">
+                  <button
+                    type="button"
+                    className="ghost round-bulk-button expand-all"
+                    aria-label="Expand all heats"
+                    title="Expand all heats"
+                    disabled={allRoundHeatsExpanded}
+                    onClick={() =>
+                      setCollapsedHeatKeys((current) => {
+                        const next = new Set(current)
+                        roundHeatKeys.forEach((heatKey) => next.delete(heatKey))
+                        return next
+                      })
+                    }
+                  />
+                  <button
+                    type="button"
+                    className="ghost round-bulk-button collapse-all"
+                    aria-label="Collapse all heats"
+                    title="Collapse all heats"
+                    disabled={allRoundHeatsCollapsed}
+                    onClick={() =>
+                      setCollapsedHeatKeys((current) => {
+                        const next = new Set(current)
+                        roundHeatKeys.forEach((heatKey) => next.add(heatKey))
+                        return next
+                      })
+                    }
+                  />
+                </div>
+              ) : null}
               {!expandedHeatKey ? (
                 <button
                   type="button"
