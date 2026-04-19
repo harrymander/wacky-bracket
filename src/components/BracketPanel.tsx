@@ -132,11 +132,13 @@ const BracketPanelContent = ({ roundStates, results, isDisplayMode, onSetLaps }:
               ) : null}
             </header>
 
-            {round.messages.map((message) => (
-              <p key={message} className="warn">
-                {message}
-              </p>
-            ))}
+            {!isDisplayMode
+              ? round.messages.map((message) => (
+                  <p key={message} className="warn">
+                    {message}
+                  </p>
+                ))
+              : null}
 
             {visibleHeats.map((heat) => {
               const ranking = evaluateHeatLaps(heat, results?.[round.id]?.[heat.id])
@@ -293,13 +295,15 @@ const BracketPanelContent = ({ roundStates, results, isDisplayMode, onSetLaps }:
                           </div>
                         )
                       })}
-                      {ranking.hasTie ? <p className="warn">Top qualifying positions must have unique lap totals.</p> : null}
+                      {!isDisplayMode && ranking.hasTie ? (
+                        <p className="warn">Top qualifying positions must have unique lap totals.</p>
+                      ) : null}
                     </>
                   ) : null}
                 </section>
               )
             })}
-            {roundIndex < roundStates.length - 1 && !round.canAdvance ? (
+            {!isDisplayMode && roundIndex < roundStates.length - 1 && !round.canAdvance ? (
               <p className="locked">Next round stays locked until all lap totals are valid.</p>
             ) : null}
           </article>
