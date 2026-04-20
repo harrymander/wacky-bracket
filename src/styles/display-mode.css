@@ -29,6 +29,11 @@
   box-shadow: 4px 4px 0 #0f172a;
 }
 
+.app.display-mode .round-lane {
+  margin: 0 auto;
+  max-width: 1200px;
+}
+
 .app.display-mode .round-bulk-button,
 .app.display-mode .round-focus-button,
 .app.display-mode .heat-focus-button,
@@ -87,4 +92,8 @@
   background: #fff7ed;
   color: #7f1d1d;
   font-weight: 700;
+}
+
+.app.display-mode .focus-mode {
+  max-width: 400px;
 }
