@@ -1,6 +1,6 @@
 # wacky-bracket
 
-A vibe-coded web app for displaying Wacky Racers tournament bracket.
+A [vibe-coded](#bot-compliments-bot-%EF%B8%8F) web app for displaying Wacky Racers tournament bracket.
 
 ## Run
 
