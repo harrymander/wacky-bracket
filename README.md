@@ -41,3 +41,7 @@ npm run preview
 
 Tournament configuration and results are persisted in `localStorage`. They can
 be exported/imported via JSON.
+
+## Bot compliments bot ❤️
+
+![Bot compliments bot](./email.png)
