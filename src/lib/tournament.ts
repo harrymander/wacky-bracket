@@ -421,16 +421,18 @@ export const buildTournament = (
       currentRoundAdvancers[heatIndex] = evaluation.actualAdvancers
     })
 
-    if (anyTieInTop) {
-      state.hasTie = true
-      state.messages.push('Tie among qualifying positions.')
-    }
-    if (anyBoundaryTie) {
-      state.messages.push('Extra participants will advance due to tie.')
-    }
+    if (roundIndex < rounds.length - 1) {
+      if (anyTieInTop) {
+        state.hasTie = true
+        state.messages.push('Tie among qualifying positions.')
+      }
+      if (anyBoundaryTie) {
+        state.messages.push('Extra participants will advance due to tie.')
+      }
 
-    if (!state.canAdvance && !state.hasTie && !anyBoundaryTie) {
-      state.messages.push('Enter laps completed for all entrants in this round to unlock the next round.')
+      if (!state.canAdvance && !state.hasTie && !anyBoundaryTie) {
+        state.messages.push('Enter laps completed for all entrants in this round to unlock the next round.')
+      }
     }
 
     lastRoundHeatAdvancers = currentRoundAdvancers
