@@ -144,9 +144,9 @@ const BracketPanelContent = ({ roundStates, results, isDisplayMode, onSetLaps }:
               const ranking = evaluateHeatLaps(heat, results?.[round.id]?.[heat.id])
               const rankByParticipantId = new Map(
                 ranking.ranked
-                  .map((entry, index) => {
+                  .map((entry) => {
                     const id = entry.entrant.participant?.id
-                    return id ? ([id, index + 1] as const) : null
+                    return id ? ([id, entry.rank] as const) : null
                   })
                   .filter((value): value is readonly [string, number] => value !== null),
               )
@@ -162,7 +162,7 @@ const BracketPanelContent = ({ roundStates, results, isDisplayMode, onSetLaps }:
               const heatKey = `${round.id}:${heat.id}`
               const isExpanded = expandedHeatKey === heatKey
               const isCollapsed = !isExpanded && collapsedHeatKeys.has(heatKey)
-              const isCompleted = ranking.isComplete && !ranking.hasTie
+              const isCompleted = ranking.isComplete
 
               return (
                 <section
@@ -219,16 +219,17 @@ const BracketPanelContent = ({ roundStates, results, isDisplayMode, onSetLaps }:
                             : ''
                         const isAdvancing =
                           ranking.isComplete &&
-                          !ranking.hasTie &&
-                          ranking.ranked
-                            .slice(0, heat.advanceCount)
-                            .some((entry) => entry.entrant.participant?.id === participant?.id)
-                        const advancingRank = participant
-                          ? ranking.ranked.findIndex((entry) => entry.entrant.participant?.id === participant.id) + 1
-                          : 0
+                          ranking.actualAdvancers.some((p) => p.id === participant?.id)
+                        const rankingEntry = participant
+                          ? ranking.ranked.find((entry) => entry.entrant.participant?.id === participant.id)
+                          : null
+                        const advancingRank = rankingEntry ? rankingEntry.rank : 0
+
+                        // Map extra advancers (from boundary ties) to the destination of the last qualifying rank
+                        const mappingRank = Math.min(advancingRank, heat.advanceCount)
                         const destinationHeat =
-                          isAdvancing && roundIndex < roundStates.length - 1 && advancingRank > 0
-                            ? destinationHeatMap.get(`${originalHeatIndex}-${advancingRank}`)
+                          isAdvancing && roundIndex < roundStates.length - 1 && mappingRank > 0
+                            ? destinationHeatMap.get(`${originalHeatIndex}-${mappingRank}`)
                             : undefined
                         const isFinalRound = roundIndex === roundStates.length - 1
                         const medalRank =
@@ -283,8 +284,11 @@ const BracketPanelContent = ({ roundStates, results, isDisplayMode, onSetLaps }:
                           </div>
                         )
                       })}
+                      {!isDisplayMode && ranking.hasTieInTop && !ranking.hasTie ? (
+                        <p className="warn">Ties detected among qualifying positions.</p>
+                      ) : null}
                       {!isDisplayMode && ranking.hasTie ? (
-                        <p className="warn">Top qualifying positions must have unique lap totals.</p>
+                        <p className="warn">Boundary tie: extra participants will advance.</p>
                       ) : null}
                     </>
                   ) : null}

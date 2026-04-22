@@ -40,11 +40,6 @@ export type RoundState = Omit<RoundConfig, 'heats'> & {
 
 export type TournamentResults = Record<string, Record<string, Record<string, string>>>
 
-type RankedEntrant = {
-  entrant: EntrantSlot
-  laps: number
-}
-
 const MIN_VALUE = 1
 
 const toPositiveInt = (value: number, fallback = MIN_VALUE): number => {
@@ -235,16 +230,30 @@ export const validateTournament = (participants: Participant[], rounds: RoundCon
   return errors
 }
 
+export type RankedEntrant = {
+  entrant: EntrantSlot
+  laps: number
+  rank: number
+}
+
+export type HeatEvaluation = {
+  isComplete: boolean
+  hasTie: boolean
+  hasTieInTop: boolean
+  ranked: RankedEntrant[]
+  actualAdvancers: Participant[]
+}
+
 export const evaluateHeatLaps = (
   heat: HeatState,
   roundResults: Record<string, string> | undefined,
-): { isComplete: boolean; hasTie: boolean; ranked: RankedEntrant[] } => {
+): HeatEvaluation => {
   const withParticipants = heat.entrants.filter((entrant) => entrant.participant !== null)
   if (withParticipants.length !== heat.entrants.length) {
-    return { isComplete: false, hasTie: false, ranked: [] }
+    return { isComplete: false, hasTie: false, hasTieInTop: false, ranked: [], actualAdvancers: [] }
   }
 
-  const ranked: RankedEntrant[] = withParticipants.map((entrant) => {
+  const entrantsWithLaps = withParticipants.map((entrant) => {
     const value = roundResults?.[entrant.participant!.id]
     const parsed = Number.parseFloat(value ?? '')
     return {
@@ -253,26 +262,54 @@ export const evaluateHeatLaps = (
     }
   })
 
-  if (ranked.some((entry) => !Number.isFinite(entry.laps) || entry.laps < 0)) {
-    return { isComplete: false, hasTie: false, ranked: [] }
+  if (entrantsWithLaps.some((entry) => !Number.isFinite(entry.laps) || entry.laps < 0)) {
+    return { isComplete: false, hasTie: false, hasTieInTop: false, ranked: [], actualAdvancers: [] }
   }
 
-  const sorted = [...ranked].sort((a, b) => b.laps - a.laps)
+  const sortedByLaps = [...entrantsWithLaps].sort((a, b) => b.laps - a.laps)
+
+  const ranked: RankedEntrant[] = []
+  let currentRank = 1
+  for (let i = 0; i < sortedByLaps.length; i += 1) {
+    if (i > 0 && sortedByLaps[i].laps < sortedByLaps[i - 1].laps) {
+      currentRank = i + 1
+    }
+    ranked.push({
+      ...sortedByLaps[i],
+      rank: currentRank,
+    })
+  }
+
   const cutoffIndex = heat.advanceCount - 1
-  const topAdvancers = sorted.slice(0, heat.advanceCount)
-  const topLaps = topAdvancers.map((entry) => entry.laps)
-  const hasTieWithinTop = new Set(topLaps).size !== topLaps.length
+
+  const topN = ranked.slice(0, heat.advanceCount)
+  const topLaps = topN.map((entry) => entry.laps)
+  const hasTieInTop = new Set(topLaps).size !== topLaps.length
+
   const hasBoundaryTie =
     cutoffIndex >= 0 &&
-    cutoffIndex + 1 < sorted.length &&
-    sorted[cutoffIndex].laps === sorted[cutoffIndex + 1].laps
-  const hasTie = hasTieWithinTop || hasBoundaryTie
+    cutoffIndex + 1 < ranked.length &&
+    ranked[cutoffIndex].laps === ranked[cutoffIndex + 1].laps
+
+  const actualAdvancers: Participant[] = []
+  if (cutoffIndex >= 0) {
+    const cutoffLaps = ranked[cutoffIndex].laps
+    ranked.forEach((entry) => {
+      if (entry.laps >= cutoffLaps && entry.entrant.participant) {
+        actualAdvancers.push(entry.entrant.participant)
+      }
+    })
+  }
+
   return {
     isComplete: true,
-    hasTie,
-    ranked: sorted,
+    hasTie: hasBoundaryTie,
+    hasTieInTop,
+    ranked,
+    actualAdvancers,
   }
 }
+
 
 const sourceSlotsForRound = (round: RoundConfig, roundIndex: number): SourceSlot[] => {
   const slots: SourceSlot[] = []
@@ -294,37 +331,65 @@ export const buildTournament = (
   results: TournamentResults,
 ): RoundState[] => {
   const output: RoundState[] = []
-  let resolvedAdvancers: Participant[] = []
+  let lastRoundHeatAdvancers: Participant[][] = []
 
   rounds.forEach((round, roundIndex) => {
-    const slots: EntrantSlot[] = []
-    if (roundIndex === 0) {
-      for (let i = 0; i < totalRoundSlots(round); i += 1) {
-        slots.push({
-          participant: participants[i] ?? null,
-          source: null,
-        })
-      }
-    } else {
-      const sources = sourceSlotsForRound(rounds[roundIndex - 1], roundIndex - 1)
-      for (let i = 0; i < totalRoundSlots(round); i += 1) {
-        slots.push({
-          participant: resolvedAdvancers[i] ?? null,
-          source: sources[i] ?? null,
-        })
-      }
-    }
+    const heatStates: HeatState[] = []
 
-    let cursor = 0
-    const heatStates: HeatState[] = round.heats.map((heat) => {
-      const count = toPositiveInt(heat.participantSlots)
-      const entrants = slots.slice(cursor, cursor + count)
-      cursor += count
-      return {
-        ...heat,
-        entrants,
-      }
-    })
+    if (roundIndex === 0) {
+      let cursor = 0
+      round.heats.forEach((heat) => {
+        const count = toPositiveInt(heat.participantSlots)
+        const heatEntrants: EntrantSlot[] = []
+        for (let i = 0; i < count; i += 1) {
+          heatEntrants.push({
+            participant: participants[cursor + i] ?? null,
+            source: null,
+          })
+        }
+        cursor += count
+        heatStates.push({ ...heat, entrants: heatEntrants })
+      })
+    } else {
+      const prevRound = rounds[roundIndex - 1]
+      const sources = sourceSlotsForRound(prevRound, roundIndex - 1)
+
+      let sourceCursor = 0
+      round.heats.forEach((heat) => {
+        const baselineCount = toPositiveInt(heat.participantSlots)
+        const heatEntrants: EntrantSlot[] = []
+
+        for (let i = 0; i < baselineCount; i += 1) {
+          const source = sources[sourceCursor + i]
+          if (source) {
+            const actualFromHeat = lastRoundHeatAdvancers[source.fromHeat] || []
+            const isLastRankForSourceHeat = source.rank === prevRound.heats[source.fromHeat].advanceCount
+
+            if (isLastRankForSourceHeat) {
+              const remaining = actualFromHeat.slice(source.rank - 1)
+              if (remaining.length > 0) {
+                remaining.forEach((p) => {
+                  heatEntrants.push({ participant: p, source })
+                })
+              } else {
+                // If no one is at or after this rank yet, still provide a placeholder slot
+                heatEntrants.push({ participant: null, source })
+              }
+            } else {
+              const p = actualFromHeat[source.rank - 1]
+              heatEntrants.push({ participant: p ?? null, source })
+            }
+          }
+          sourceCursor += 1
+        }
+
+        heatStates.push({
+          ...heat,
+          entrants: heatEntrants,
+          participantSlots: heatEntrants.length,
+        })
+      })
+    }
 
     const state: RoundState = {
       ...round,
@@ -334,36 +399,41 @@ export const buildTournament = (
       messages: [],
     }
 
-    if (roundIndex < rounds.length - 1) {
-      const advancers: Participant[] = []
+    const currentRoundAdvancers: Participant[][] = []
+    let anyTieInTop = false
+    let anyBoundaryTie = false
 
-      heatStates.forEach((heat) => {
-        const ranked = evaluateHeatLaps(heat, results?.[round.id]?.[heat.id])
-        if (!ranked.isComplete) {
-          state.canAdvance = false
-          return
-        }
-        if (ranked.hasTie) {
-          state.canAdvance = false
-          state.hasTie = true
-          return
-        }
-        ranked.ranked.slice(0, heat.advanceCount).forEach((entry) => {
-          if (entry.entrant.participant) {
-            advancers.push(entry.entrant.participant)
-          }
-        })
-      })
+    heatStates.forEach((heat, heatIndex) => {
+      const evaluation = evaluateHeatLaps(heat, results?.[round.id]?.[heat.id])
+      if (!evaluation.isComplete) {
+        state.canAdvance = false
+        currentRoundAdvancers[heatIndex] = []
+        return
+      }
 
-      if (state.hasTie) {
-        state.messages.push('Tie at/within qualifying positions. Top qualifiers must have unique lap totals.')
+      if (evaluation.hasTieInTop) {
+        anyTieInTop = true
       }
-      if (!state.canAdvance && !state.hasTie) {
-        state.messages.push('Enter laps completed for all entrants in this round to unlock the next round.')
+      if (evaluation.hasTie) {
+        anyBoundaryTie = true
       }
-      resolvedAdvancers = state.canAdvance ? advancers : []
+
+      currentRoundAdvancers[heatIndex] = evaluation.actualAdvancers
+    })
+
+    if (anyTieInTop) {
+      state.hasTie = true
+      state.messages.push('Tie detected among qualifying positions.')
+    }
+    if (anyBoundaryTie) {
+      state.messages.push('Boundary tie detected: extra participants will advance.')
     }
 
+    if (!state.canAdvance && !state.hasTie && !anyBoundaryTie) {
+      state.messages.push('Enter laps completed for all entrants in this round to unlock the next round.')
+    }
+
+    lastRoundHeatAdvancers = currentRoundAdvancers
     output.push(state)
   })
 
