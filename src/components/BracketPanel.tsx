@@ -167,10 +167,13 @@ const BracketPanelContent = ({ roundStates, results, isDisplayMode, onSetLaps }:
               return (
                 <section
                   key={heat.id}
-                  className={`heat-card ${isExpanded ? 'focus-mode' : ''} ${isCollapsed ? 'collapsed' : ''} ${isCollapsed && isCompleted ? 'complete' : ''}`}
+                  className={`heat-card ${isExpanded ? 'focus-mode' : ''} ${isCollapsed ? 'collapsed' : ''} ${isCompleted ? 'complete' : ''}`}
                 >
                   <div className="heat-header">
-                    {roundIndex < roundStates.length - 1 ? <h4>{heat.label}</h4> : <h4>{round.label}</h4>}
+                    <div className="heat-title-group">
+                      {roundIndex < roundStates.length - 1 ? <h4>{heat.label}</h4> : <h4>{round.label}</h4>}
+                      {!isCollapsed && isCompleted ? <span className="completed-badge">Completed</span> : null}
+                    </div>
                     <div className="heat-header-controls">
                       {!isExpanded ? (
                         <button
