@@ -336,9 +336,16 @@
   font-weight: 700;
 }
 
-.warn,
+.message,
 .locked {
   margin: 0.5rem 0 0;
-  color: #9a3412;
   font-size: 0.9rem;
+}
+
+.message {
+  color: #126d9b;
+}
+
+.locked {
+  color: #9a3412;
 }

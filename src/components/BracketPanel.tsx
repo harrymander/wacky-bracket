@@ -134,7 +134,7 @@ const BracketPanelContent = ({ roundStates, results, isDisplayMode, onSetLaps }:
 
             {!isDisplayMode
               ? round.messages.map((message) => (
-                  <p key={message} className="warn">
+                  <p key={message} className="message">
                     {message}
                   </p>
                 ))
