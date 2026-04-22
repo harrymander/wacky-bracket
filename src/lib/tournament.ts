@@ -423,10 +423,10 @@ export const buildTournament = (
 
     if (anyTieInTop) {
       state.hasTie = true
-      state.messages.push('Tie detected among qualifying positions.')
+      state.messages.push('Tie among qualifying positions.')
     }
     if (anyBoundaryTie) {
-      state.messages.push('Boundary tie detected: extra participants will advance.')
+      state.messages.push('Extra participants will advance due to tie.')
     }
 
     if (!state.canAdvance && !state.hasTie && !anyBoundaryTie) {

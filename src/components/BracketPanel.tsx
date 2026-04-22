@@ -287,12 +287,6 @@ const BracketPanelContent = ({ roundStates, results, isDisplayMode, onSetLaps }:
                           </div>
                         )
                       })}
-                      {!isDisplayMode && ranking.hasTieInTop && !ranking.hasTie ? (
-                        <p className="warn">Ties detected among qualifying positions.</p>
-                      ) : null}
-                      {!isDisplayMode && ranking.hasTie ? (
-                        <p className="warn">Boundary tie: extra participants will advance.</p>
-                      ) : null}
                     </>
                   ) : null}
                 </section>
