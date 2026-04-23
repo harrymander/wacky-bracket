@@ -5,7 +5,7 @@ A [vibe-coded](#bot-compliments-bot-%EF%B8%8F) web app for displaying Wacky Race
 ## Run
 
 ```bash
-npm install
+npm ci
 npm run dev
 ```
 
