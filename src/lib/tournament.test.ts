@@ -224,6 +224,13 @@ describe('validateTournament', () => {
     expect(validateTournament(passingParticipants, passingRounds)).toEqual([])
   })
 
+  it('returns no errors for a valid single-round tournament', () => {
+    const rounds: RoundConfig[] = [
+      { id: 'r1', label: 'Final', heats: [createHeat(0, 0, 4, 1)] },
+    ]
+    expect(validateTournament(makeParticipants(4), rounds)).toEqual([])
+  })
+
   it('flags an empty participant list', () => {
     expect(validateTournament([], passingRounds)).toContain('Add at least one participant.')
   })
@@ -281,12 +288,23 @@ describe('evaluateHeatLaps', () => {
     const heat = buildHeatState(['Alice', 'Bob'], 1)
     const evaluation = evaluateHeatLaps(heat, { [heat.entrants[0]!.participant!.id]: '5' })
     expect(evaluation.isComplete).toBe(false)
+    expect(evaluation.ranked).toEqual([])
+    expect(evaluation.actualAdvancers).toEqual([])
+    expect(evaluation.hasTie).toBe(false)
+    expect(evaluation.hasTieInTop).toBe(false)
   })
 
   it('marks the heat incomplete when a lap value is negative or NaN', () => {
     const heat = buildHeatState(['Alice', 'Bob'], 1)
-    expect(evaluateHeatLaps(heat, lapsFor(heat, [5, -1])).isComplete).toBe(false)
-    expect(evaluateHeatLaps(heat, lapsFor(heat, [5, 'abc'])).isComplete).toBe(false)
+    const negative = evaluateHeatLaps(heat, lapsFor(heat, [5, -1]))
+    expect(negative.isComplete).toBe(false)
+    expect(negative.ranked).toEqual([])
+    expect(negative.actualAdvancers).toEqual([])
+
+    const nonNumeric = evaluateHeatLaps(heat, lapsFor(heat, [5, 'abc']))
+    expect(nonNumeric.isComplete).toBe(false)
+    expect(nonNumeric.ranked).toEqual([])
+    expect(nonNumeric.actualAdvancers).toEqual([])
   })
 
   it('ranks entrants by laps (highest first)', () => {
@@ -387,6 +405,24 @@ describe('buildTournament — round 1 seeding', () => {
     ]
     const [roundOne] = buildTournament(rounds, makeParticipants(2), {})
     expect(namesOf(roundOne.heats[0].entrants.map((e) => e.participant))).toEqual(['P1', 'P2', null])
+  })
+
+  it('fills every round-1 slot with null when there are no participants', () => {
+    const rounds: RoundConfig[] = [
+      {
+        id: 'r1',
+        label: 'Round 1',
+        heats: [createHeat(0, 0, 3, 1), createHeat(0, 1, 2, 1)],
+      },
+      { id: 'r2', label: 'Final', heats: [createHeat(1, 0, 2, 1)] },
+    ]
+    const [roundOne] = buildTournament(rounds, [], {})
+    expect(roundOne.heats).toHaveLength(2)
+    expect(roundOne.heats[0].entrants.map((e) => e.participant)).toEqual([null, null, null])
+    expect(roundOne.heats[1].entrants.map((e) => e.participant)).toEqual([null, null])
+    roundOne.heats.forEach((heat) =>
+      heat.entrants.forEach((entrant) => expect(entrant.source).toBeNull()),
+    )
   })
 })
 
@@ -618,6 +654,14 @@ describe('buildTournament — source slot propagation', () => {
       { fromRound: 0, fromHeat: 0, rank: 2 },
       { fromRound: 0, fromHeat: 0, rank: 2 },
     ])
+    // Two distinct entrants intentionally share the cutoff-slot source descriptor
+    // when a boundary tie expands the destination heat. Downstream consumers
+    // must not assume source uniquely identifies an entrant.
+    const cutoffEntrants = finalRound.heats[0].entrants.filter(
+      (e) => e.source?.rank === 2,
+    )
+    expect(cutoffEntrants).toHaveLength(2)
+    expect(cutoffEntrants[0].participant?.id).not.toBe(cutoffEntrants[1].participant?.id)
   })
 })
 
@@ -1264,6 +1308,21 @@ describe('buildTournament — structural invariants', () => {
     expect(first).toEqual(second)
   })
 
+  it('returns freshly constructed objects on each call (no shared mutable state)', () => {
+    const { rounds, participants, results } = buildComplexTournament()
+    const first = buildTournament(rounds, participants, results)
+    const second = buildTournament(rounds, participants, results)
+    expect(first).not.toBe(second)
+    first.forEach((round, roundIndex) => {
+      expect(round).not.toBe(second[roundIndex])
+      expect(round.heats).not.toBe(second[roundIndex].heats)
+      round.heats.forEach((heat, heatIndex) => {
+        expect(heat).not.toBe(second[roundIndex].heats[heatIndex])
+        expect(heat.entrants).not.toBe(second[roundIndex].heats[heatIndex].entrants)
+      })
+    })
+  })
+
   it('orders entries from the same source heat by non-decreasing rank within each destination heat', () => {
     const { built } = buildComplexTournament()
     built.forEach((round, roundIndex) => {
@@ -1333,6 +1392,38 @@ describe('buildTournament — round status flags', () => {
     expect(roundOne.messages).toContain(
       'Enter laps completed for all entrants in this round to unlock the next round.',
     )
+  })
+
+  it('reports canAdvance=true with no advancement messages once every heat is complete', () => {
+    const rounds: RoundConfig[] = [
+      {
+        id: 'r1',
+        label: 'Round 1',
+        heats: [createHeat(0, 0, 2, 1), createHeat(0, 1, 2, 1)],
+      },
+      { id: 'r2', label: 'Final', heats: [createHeat(1, 0, 2, 1)] },
+    ]
+    const participants = makeParticipants(4)
+    const results: TournamentResults = {
+      r1: {
+        'round-1-heat-1': {
+          [participants[0].id]: '10',
+          [participants[1].id]: '5',
+        },
+        'round-1-heat-2': {
+          [participants[2].id]: '9',
+          [participants[3].id]: '4',
+        },
+      },
+    }
+    const [roundOne] = buildTournament(rounds, participants, results)
+    expect(roundOne.canAdvance).toBe(true)
+    expect(roundOne.hasTie).toBe(false)
+    expect(roundOne.messages).not.toContain(
+      'Enter laps completed for all entrants in this round to unlock the next round.',
+    )
+    expect(roundOne.messages).not.toContain('Tie among qualifying positions.')
+    expect(roundOne.messages).not.toContain('Extra participants will advance due to tie.')
   })
 
   it('reports hasTie=true and a corresponding message for a tie among qualifying positions', () => {
