@@ -907,6 +907,247 @@ describe('buildTournament — participant uniqueness across heats', () => {
   })
 })
 
+describe('buildTournament — every qualifier advances', () => {
+  type RoundLike = {
+    id: string
+    heats: HeatState[]
+  }
+
+  const idsInRound = (round: RoundLike): Set<string> => {
+    const ids = new Set<string>()
+    round.heats.forEach((heat) =>
+      heat.entrants.forEach((entrant) => {
+        if (entrant.participant) {
+          ids.add(entrant.participant.id)
+        }
+      }),
+    )
+    return ids
+  }
+
+  const expectedAdvancerIds = (
+    prevRound: RoundLike,
+    results: TournamentResults,
+  ): Set<string> => {
+    const ids = new Set<string>()
+    prevRound.heats.forEach((heat) => {
+      const laps = results[prevRound.id]?.[heat.id] ?? {}
+      evaluateHeatLaps(heat, laps).actualAdvancers.forEach((p) => ids.add(p.id))
+    })
+    return ids
+  }
+
+  const expectAdvancersMatchPriorRound = (
+    rounds: RoundLike[],
+    results: TournamentResults,
+    roundIndex: number,
+  ) => {
+    expect(roundIndex).toBeGreaterThan(0)
+    expect(idsInRound(rounds[roundIndex])).toEqual(
+      expectedAdvancerIds(rounds[roundIndex - 1], results),
+    )
+  }
+
+  it('places every qualifier from a clean prior round into the next round', () => {
+    const rounds: RoundConfig[] = [
+      {
+        id: 'r1',
+        label: 'Round 1',
+        heats: [
+          createHeat(0, 0, 4, 2),
+          createHeat(0, 1, 4, 2),
+          createHeat(0, 2, 4, 2),
+          createHeat(0, 3, 4, 2),
+        ],
+      },
+      {
+        id: 'r2',
+        label: 'Round 2',
+        heats: [createHeat(1, 0, 4, 1), createHeat(1, 1, 4, 1)],
+      },
+      { id: 'r3', label: 'Final', heats: [createHeat(2, 0, 2, 1)] },
+    ]
+    const participants = makeParticipants(16)
+    const heatLaps = (offset: number) => ({
+      [participants[offset].id]: '10',
+      [participants[offset + 1].id]: '8',
+      [participants[offset + 2].id]: '5',
+      [participants[offset + 3].id]: '2',
+    })
+    const results: TournamentResults = {
+      r1: {
+        'round-1-heat-1': heatLaps(0),
+        'round-1-heat-2': heatLaps(4),
+        'round-1-heat-3': heatLaps(8),
+        'round-1-heat-4': heatLaps(12),
+      },
+    }
+    const built = buildTournament(rounds, participants, results)
+    expectAdvancersMatchPriorRound(built, results, 1)
+  })
+
+  it('places the boundary-tie extra advancer into the next round alongside the regular qualifiers', () => {
+    const rounds: RoundConfig[] = [
+      {
+        id: 'r1',
+        label: 'Round 1',
+        heats: [
+          createHeat(0, 0, 4, 2),
+          createHeat(0, 1, 4, 2),
+          createHeat(0, 2, 4, 2),
+          createHeat(0, 3, 4, 2),
+        ],
+      },
+      {
+        id: 'r2',
+        label: 'Round 2',
+        heats: [createHeat(1, 0, 4, 1), createHeat(1, 1, 4, 1)],
+      },
+      { id: 'r3', label: 'Final', heats: [createHeat(2, 0, 2, 1)] },
+    ]
+    const participants = makeParticipants(16)
+    const cleanLaps = (offset: number) => ({
+      [participants[offset].id]: '10',
+      [participants[offset + 1].id]: '8',
+      [participants[offset + 2].id]: '5',
+      [participants[offset + 3].id]: '2',
+    })
+    const results: TournamentResults = {
+      r1: {
+        'round-1-heat-1': {
+          [participants[0].id]: '10',
+          [participants[1].id]: '8',
+          [participants[2].id]: '8',
+          [participants[3].id]: '3',
+        },
+        'round-1-heat-2': cleanLaps(4),
+        'round-1-heat-3': cleanLaps(8),
+        'round-1-heat-4': cleanLaps(12),
+      },
+    }
+    const built = buildTournament(rounds, participants, results)
+    expectAdvancersMatchPriorRound(built, results, 1)
+  })
+
+  it('places every qualifier when boundary ties occur in every source heat', () => {
+    const rounds: RoundConfig[] = [
+      {
+        id: 'r1',
+        label: 'Round 1',
+        heats: [
+          createHeat(0, 0, 4, 2),
+          createHeat(0, 1, 4, 2),
+          createHeat(0, 2, 4, 2),
+          createHeat(0, 3, 4, 2),
+        ],
+      },
+      {
+        id: 'r2',
+        label: 'Round 2',
+        heats: [createHeat(1, 0, 4, 1), createHeat(1, 1, 4, 1)],
+      },
+      { id: 'r3', label: 'Final', heats: [createHeat(2, 0, 2, 1)] },
+    ]
+    const participants = makeParticipants(16)
+    const tiedLaps = (offset: number) => ({
+      [participants[offset].id]: '10',
+      [participants[offset + 1].id]: '8',
+      [participants[offset + 2].id]: '8',
+      [participants[offset + 3].id]: '3',
+    })
+    const results: TournamentResults = {
+      r1: {
+        'round-1-heat-1': tiedLaps(0),
+        'round-1-heat-2': tiedLaps(4),
+        'round-1-heat-3': tiedLaps(8),
+        'round-1-heat-4': tiedLaps(12),
+      },
+    }
+    const built = buildTournament(rounds, participants, results)
+    expectAdvancersMatchPriorRound(built, results, 1)
+  })
+
+  it('places both tied entrants when the qualifying positions are tied', () => {
+    const rounds: RoundConfig[] = [
+      {
+        id: 'r1',
+        label: 'Round 1',
+        heats: [createHeat(0, 0, 3, 2), createHeat(0, 1, 3, 2)],
+      },
+      { id: 'r2', label: 'Final', heats: [createHeat(1, 0, 4, 1)] },
+    ]
+    const participants = makeParticipants(6)
+    const results: TournamentResults = {
+      r1: {
+        'round-1-heat-1': {
+          [participants[0].id]: '10',
+          [participants[1].id]: '10',
+          [participants[2].id]: '5',
+        },
+        'round-1-heat-2': {
+          [participants[3].id]: '9',
+          [participants[4].id]: '7',
+          [participants[5].id]: '4',
+        },
+      },
+    }
+    const built = buildTournament(rounds, participants, results)
+    expectAdvancersMatchPriorRound(built, results, 1)
+  })
+
+  it('places every qualifier from every transition in a multi-round chain', () => {
+    const rounds: RoundConfig[] = [
+      {
+        id: 'r1',
+        label: 'Round 1',
+        heats: [
+          createHeat(0, 0, 3, 2),
+          createHeat(0, 1, 3, 2),
+          createHeat(0, 2, 3, 2),
+          createHeat(0, 3, 3, 2),
+        ],
+      },
+      {
+        id: 'r2',
+        label: 'Round 2',
+        heats: [createHeat(1, 0, 4, 1), createHeat(1, 1, 4, 1)],
+      },
+      { id: 'r3', label: 'Final', heats: [createHeat(2, 0, 2, 1)] },
+    ]
+    const participants = makeParticipants(12)
+    const heatLaps = (offset: number) => ({
+      [participants[offset].id]: '10',
+      [participants[offset + 1].id]: '8',
+      [participants[offset + 2].id]: '5',
+    })
+    const results: TournamentResults = {
+      r1: {
+        'round-1-heat-1': heatLaps(0),
+        'round-1-heat-2': heatLaps(3),
+        'round-1-heat-3': heatLaps(6),
+        'round-1-heat-4': heatLaps(9),
+      },
+      r2: {
+        'round-2-heat-1': {
+          [participants[0].id]: '10',
+          [participants[1].id]: '7',
+          [participants[3].id]: '9',
+          [participants[4].id]: '5',
+        },
+        'round-2-heat-2': {
+          [participants[6].id]: '11',
+          [participants[7].id]: '6',
+          [participants[9].id]: '8',
+          [participants[10].id]: '4',
+        },
+      },
+    }
+    const built = buildTournament(rounds, participants, results)
+    expectAdvancersMatchPriorRound(built, results, 1)
+    expectAdvancersMatchPriorRound(built, results, 2)
+  })
+})
+
 describe('buildTournament — round status flags', () => {
   it('reports canAdvance=false until all heats in the round are complete', () => {
     const rounds: RoundConfig[] = [
