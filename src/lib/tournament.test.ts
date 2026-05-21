@@ -1148,6 +1148,180 @@ describe('buildTournament — every qualifier advances', () => {
   })
 })
 
+describe('buildTournament — structural invariants', () => {
+  const buildComplexTournament = () => {
+    const rounds: RoundConfig[] = [
+      {
+        id: 'r1',
+        label: 'Round 1',
+        heats: [
+          createHeat(0, 0, 4, 2),
+          createHeat(0, 1, 4, 2),
+          createHeat(0, 2, 4, 2),
+          createHeat(0, 3, 4, 2),
+        ],
+      },
+      {
+        id: 'r2',
+        label: 'Round 2',
+        heats: [createHeat(1, 0, 4, 2), createHeat(1, 1, 4, 2)],
+      },
+      { id: 'r3', label: 'Final', heats: [createHeat(2, 0, 4, 1)] },
+    ]
+    const participants = makeParticipants(16)
+    const cleanLaps = (offset: number) => ({
+      [participants[offset].id]: '10',
+      [participants[offset + 1].id]: '8',
+      [participants[offset + 2].id]: '5',
+      [participants[offset + 3].id]: '2',
+    })
+    const results: TournamentResults = {
+      r1: {
+        'round-1-heat-1': {
+          [participants[0].id]: '10',
+          [participants[1].id]: '8',
+          [participants[2].id]: '8',
+          [participants[3].id]: '3',
+        },
+        'round-1-heat-2': cleanLaps(4),
+        'round-1-heat-3': cleanLaps(8),
+        'round-1-heat-4': cleanLaps(12),
+      },
+    }
+    return {
+      rounds,
+      participants,
+      results,
+      built: buildTournament(rounds, participants, results),
+    }
+  }
+
+  it('seeds round 1 with participants[] in order, padding trailing slots with null', () => {
+    const rounds: RoundConfig[] = [
+      {
+        id: 'r1',
+        label: 'Round 1',
+        heats: [createHeat(0, 0, 4, 2), createHeat(0, 1, 4, 2), createHeat(0, 2, 4, 2)],
+      },
+      { id: 'r2', label: 'Final', heats: [createHeat(1, 0, 6, 1)] },
+    ]
+    const participants = makeParticipants(10)
+    const [roundOne] = buildTournament(rounds, participants, {})
+    const flat = roundOne.heats.flatMap((heat) =>
+      heat.entrants.map((entrant) => entrant.participant),
+    )
+    expect(flat).toHaveLength(12)
+    expect(flat.slice(0, 10)).toEqual(participants)
+    expect(flat.slice(10)).toEqual([null, null])
+  })
+
+  it('keeps source === null in round 0 and non-null in every later-round entrant', () => {
+    const { built } = buildComplexTournament()
+    built[0].heats.forEach((heat) =>
+      heat.entrants.forEach((entrant) => expect(entrant.source).toBeNull()),
+    )
+    built.slice(1).forEach((round) =>
+      round.heats.forEach((heat) =>
+        heat.entrants.forEach((entrant) => expect(entrant.source).not.toBeNull()),
+      ),
+    )
+  })
+
+  it('emits structurally valid source descriptors for every later-round entrant', () => {
+    const { rounds, built } = buildComplexTournament()
+    built.forEach((round, roundIndex) => {
+      if (roundIndex === 0) return
+      const prevHeats = rounds[roundIndex - 1].heats
+      round.heats.forEach((heat) => {
+        heat.entrants.forEach((entrant) => {
+          if (!entrant.source) {
+            throw new Error('expected source to be non-null in a later round')
+          }
+          expect(entrant.source.fromRound).toBe(roundIndex - 1)
+          expect(entrant.source.fromHeat).toBeGreaterThanOrEqual(0)
+          expect(entrant.source.fromHeat).toBeLessThan(prevHeats.length)
+          const sourceHeat = prevHeats[entrant.source.fromHeat]
+          expect(entrant.source.rank).toBeGreaterThanOrEqual(1)
+          expect(entrant.source.rank).toBeLessThanOrEqual(sourceHeat.advanceCount)
+        })
+      })
+    })
+  })
+
+  it('keeps heat.participantSlots equal to heat.entrants.length after building', () => {
+    const { built } = buildComplexTournament()
+    built.forEach((round) =>
+      round.heats.forEach((heat) =>
+        expect(heat.participantSlots).toBe(heat.entrants.length),
+      ),
+    )
+  })
+
+  it('returns deeply equal output when called twice with the same inputs', () => {
+    const { rounds, participants, results } = buildComplexTournament()
+    const first = buildTournament(rounds, participants, results)
+    const second = buildTournament(rounds, participants, results)
+    expect(first).toEqual(second)
+  })
+
+  it('orders entries from the same source heat by non-decreasing rank within each destination heat', () => {
+    const { built } = buildComplexTournament()
+    built.forEach((round, roundIndex) => {
+      if (roundIndex === 0) return
+      round.heats.forEach((heat) => {
+        const lastRankPerSourceHeat = new Map<number, number>()
+        heat.entrants.forEach((entrant) => {
+          if (!entrant.source) return
+          const prev = lastRankPerSourceHeat.get(entrant.source.fromHeat)
+          if (prev !== undefined) {
+            expect(entrant.source.rank).toBeGreaterThanOrEqual(prev)
+          }
+          lastRankPerSourceHeat.set(entrant.source.fromHeat, entrant.source.rank)
+        })
+      })
+    })
+  })
+
+  it('places top-tied qualifiers into the destination heats their ranks map to', () => {
+    const rounds: RoundConfig[] = [
+      {
+        id: 'r1',
+        label: 'Round 1',
+        heats: [createHeat(0, 0, 3, 2), createHeat(0, 1, 3, 2)],
+      },
+      {
+        id: 'r2',
+        label: 'Round 2',
+        heats: [createHeat(1, 0, 3, 1), createHeat(1, 1, 1, 1)],
+      },
+      { id: 'r3', label: 'Final', heats: [createHeat(2, 0, 2, 1)] },
+    ]
+    const participants = makeParticipants(6)
+    const results: TournamentResults = {
+      r1: {
+        'round-1-heat-1': {
+          [participants[0].id]: '10',
+          [participants[1].id]: '8',
+          [participants[2].id]: '5',
+        },
+        'round-1-heat-2': {
+          [participants[3].id]: '10',
+          [participants[4].id]: '10',
+          [participants[5].id]: '4',
+        },
+      },
+    }
+    const [roundOne, roundTwo] = buildTournament(rounds, participants, results)
+    expect(roundOne.hasTie).toBe(true)
+    expect(namesOf(roundTwo.heats[0].entrants.map((e) => e.participant))).toEqual([
+      'P1',
+      'P2',
+      'P4',
+    ])
+    expect(namesOf(roundTwo.heats[1].entrants.map((e) => e.participant))).toEqual(['P5'])
+  })
+})
+
 describe('buildTournament — round status flags', () => {
   it('reports canAdvance=false until all heats in the round are complete', () => {
     const rounds: RoundConfig[] = [
