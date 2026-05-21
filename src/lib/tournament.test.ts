@@ -621,6 +621,292 @@ describe('buildTournament — source slot propagation', () => {
   })
 })
 
+describe('buildTournament — participant uniqueness across heats', () => {
+  type RoundLike = {
+    heats: Array<{ entrants: Array<{ participant: Participant | null }> }>
+  }
+
+  const collectParticipantIds = (round: RoundLike): string[] => {
+    const ids: string[] = []
+    round.heats.forEach((heat) =>
+      heat.entrants.forEach((entrant) => {
+        if (entrant.participant) {
+          ids.push(entrant.participant.id)
+        }
+      }),
+    )
+    return ids
+  }
+
+  const expectUniqueParticipantsAcrossHeats = (round: RoundLike) => {
+    const ids = collectParticipantIds(round)
+    expect(new Set(ids).size).toBe(ids.length)
+  }
+
+  it('keeps source slots unique across multiple destination heats when no results are entered', () => {
+    const rounds: RoundConfig[] = [
+      {
+        id: 'r1',
+        label: 'Round 1',
+        heats: [
+          createHeat(0, 0, 3, 2),
+          createHeat(0, 1, 3, 2),
+          createHeat(0, 2, 3, 2),
+          createHeat(0, 3, 3, 2),
+        ],
+      },
+      {
+        id: 'r2',
+        label: 'Round 2',
+        heats: [createHeat(1, 0, 4, 1), createHeat(1, 1, 4, 1)],
+      },
+      { id: 'r3', label: 'Final', heats: [createHeat(2, 0, 2, 1)] },
+    ]
+    const [, roundTwo] = buildTournament(rounds, makeParticipants(12), {})
+    const sourceKeys = roundTwo.heats.flatMap((heat) =>
+      heat.entrants.map((entrant) => JSON.stringify(entrant.source)),
+    )
+    expect(new Set(sourceKeys).size).toBe(sourceKeys.length)
+    expect(sourceKeys).toHaveLength(8)
+  })
+
+  it('does not place the same participant in two heats of a multi-heat next round when advancement is clean', () => {
+    const rounds: RoundConfig[] = [
+      {
+        id: 'r1',
+        label: 'Round 1',
+        heats: [
+          createHeat(0, 0, 4, 2),
+          createHeat(0, 1, 4, 2),
+          createHeat(0, 2, 4, 2),
+          createHeat(0, 3, 4, 2),
+        ],
+      },
+      {
+        id: 'r2',
+        label: 'Round 2',
+        heats: [createHeat(1, 0, 4, 1), createHeat(1, 1, 4, 1)],
+      },
+      { id: 'r3', label: 'Final', heats: [createHeat(2, 0, 2, 1)] },
+    ]
+    const participants = makeParticipants(16)
+    const heatLaps = (offset: number) => ({
+      [participants[offset].id]: '10',
+      [participants[offset + 1].id]: '8',
+      [participants[offset + 2].id]: '5',
+      [participants[offset + 3].id]: '2',
+    })
+    const results: TournamentResults = {
+      r1: {
+        'round-1-heat-1': heatLaps(0),
+        'round-1-heat-2': heatLaps(4),
+        'round-1-heat-3': heatLaps(8),
+        'round-1-heat-4': heatLaps(12),
+      },
+    }
+    const [, roundTwo] = buildTournament(rounds, participants, results)
+    expectUniqueParticipantsAcrossHeats(roundTwo)
+    expect(collectParticipantIds(roundTwo)).toHaveLength(8)
+  })
+
+  it('does not duplicate participants across heats when a boundary tie adds an extra advancer', () => {
+    const rounds: RoundConfig[] = [
+      {
+        id: 'r1',
+        label: 'Round 1',
+        heats: [
+          createHeat(0, 0, 4, 2),
+          createHeat(0, 1, 4, 2),
+          createHeat(0, 2, 4, 2),
+          createHeat(0, 3, 4, 2),
+        ],
+      },
+      {
+        id: 'r2',
+        label: 'Round 2',
+        heats: [createHeat(1, 0, 4, 1), createHeat(1, 1, 4, 1)],
+      },
+      { id: 'r3', label: 'Final', heats: [createHeat(2, 0, 2, 1)] },
+    ]
+    const participants = makeParticipants(16)
+    const results: TournamentResults = {
+      r1: {
+        'round-1-heat-1': {
+          [participants[0].id]: '10',
+          [participants[1].id]: '8',
+          [participants[2].id]: '8',
+          [participants[3].id]: '3',
+        },
+        'round-1-heat-2': {
+          [participants[4].id]: '11',
+          [participants[5].id]: '6',
+          [participants[6].id]: '4',
+          [participants[7].id]: '2',
+        },
+        'round-1-heat-3': {
+          [participants[8].id]: '10',
+          [participants[9].id]: '8',
+          [participants[10].id]: '5',
+          [participants[11].id]: '3',
+        },
+        'round-1-heat-4': {
+          [participants[12].id]: '10',
+          [participants[13].id]: '8',
+          [participants[14].id]: '5',
+          [participants[15].id]: '3',
+        },
+      },
+    }
+    const [, roundTwo] = buildTournament(rounds, participants, results)
+    expectUniqueParticipantsAcrossHeats(roundTwo)
+    // 8 baseline + 1 boundary-tie extra
+    expect(collectParticipantIds(roundTwo)).toHaveLength(9)
+  })
+
+  it('does not duplicate participants across heats when boundary ties occur in multiple source heats', () => {
+    const rounds: RoundConfig[] = [
+      {
+        id: 'r1',
+        label: 'Round 1',
+        heats: [
+          createHeat(0, 0, 4, 2),
+          createHeat(0, 1, 4, 2),
+          createHeat(0, 2, 4, 2),
+          createHeat(0, 3, 4, 2),
+        ],
+      },
+      {
+        id: 'r2',
+        label: 'Round 2',
+        heats: [createHeat(1, 0, 4, 1), createHeat(1, 1, 4, 1)],
+      },
+      { id: 'r3', label: 'Final', heats: [createHeat(2, 0, 2, 1)] },
+    ]
+    const participants = makeParticipants(16)
+    const tiedHeatLaps = (offset: number) => ({
+      [participants[offset].id]: '10',
+      [participants[offset + 1].id]: '8',
+      [participants[offset + 2].id]: '8',
+      [participants[offset + 3].id]: '3',
+    })
+    const results: TournamentResults = {
+      r1: {
+        'round-1-heat-1': tiedHeatLaps(0),
+        'round-1-heat-2': tiedHeatLaps(4),
+        'round-1-heat-3': tiedHeatLaps(8),
+        'round-1-heat-4': tiedHeatLaps(12),
+      },
+    }
+    const [, roundTwo] = buildTournament(rounds, participants, results)
+    expectUniqueParticipantsAcrossHeats(roundTwo)
+    // 8 baseline + 4 boundary-tie extras (one per source heat)
+    expect(collectParticipantIds(roundTwo)).toHaveLength(12)
+  })
+
+  it('does not duplicate participants across heats when there is a tie within the qualifying positions', () => {
+    const rounds: RoundConfig[] = [
+      {
+        id: 'r1',
+        label: 'Round 1',
+        heats: [
+          createHeat(0, 0, 3, 2),
+          createHeat(0, 1, 3, 2),
+          createHeat(0, 2, 3, 2),
+          createHeat(0, 3, 3, 2),
+        ],
+      },
+      {
+        id: 'r2',
+        label: 'Round 2',
+        heats: [createHeat(1, 0, 4, 1), createHeat(1, 1, 4, 1)],
+      },
+      { id: 'r3', label: 'Final', heats: [createHeat(2, 0, 2, 1)] },
+    ]
+    const participants = makeParticipants(12)
+    const results: TournamentResults = {
+      r1: {
+        'round-1-heat-1': {
+          [participants[0].id]: '10',
+          [participants[1].id]: '10',
+          [participants[2].id]: '5',
+        },
+        'round-1-heat-2': {
+          [participants[3].id]: '9',
+          [participants[4].id]: '7',
+          [participants[5].id]: '4',
+        },
+        'round-1-heat-3': {
+          [participants[6].id]: '8',
+          [participants[7].id]: '8',
+          [participants[8].id]: '3',
+        },
+        'round-1-heat-4': {
+          [participants[9].id]: '11',
+          [participants[10].id]: '6',
+          [participants[11].id]: '2',
+        },
+      },
+    }
+    const [roundOne, roundTwo] = buildTournament(rounds, participants, results)
+    expect(roundOne.hasTie).toBe(true)
+    expectUniqueParticipantsAcrossHeats(roundTwo)
+    expect(collectParticipantIds(roundTwo)).toHaveLength(8)
+  })
+
+  it('keeps participants unique across heats in every round of a multi-round chain', () => {
+    const rounds: RoundConfig[] = [
+      {
+        id: 'r1',
+        label: 'Round 1',
+        heats: [
+          createHeat(0, 0, 3, 2),
+          createHeat(0, 1, 3, 2),
+          createHeat(0, 2, 3, 2),
+          createHeat(0, 3, 3, 2),
+        ],
+      },
+      {
+        id: 'r2',
+        label: 'Round 2',
+        heats: [createHeat(1, 0, 4, 1), createHeat(1, 1, 4, 1)],
+      },
+      { id: 'r3', label: 'Final', heats: [createHeat(2, 0, 2, 1)] },
+    ]
+    const participants = makeParticipants(12)
+    const heatLaps = (offset: number) => ({
+      [participants[offset].id]: '10',
+      [participants[offset + 1].id]: '8',
+      [participants[offset + 2].id]: '5',
+    })
+    const results: TournamentResults = {
+      r1: {
+        'round-1-heat-1': heatLaps(0),
+        'round-1-heat-2': heatLaps(3),
+        'round-1-heat-3': heatLaps(6),
+        'round-1-heat-4': heatLaps(9),
+      },
+      r2: {
+        'round-2-heat-1': {
+          [participants[0].id]: '10',
+          [participants[1].id]: '7',
+          [participants[3].id]: '9',
+          [participants[4].id]: '5',
+        },
+        'round-2-heat-2': {
+          [participants[6].id]: '11',
+          [participants[7].id]: '6',
+          [participants[9].id]: '8',
+          [participants[10].id]: '4',
+        },
+      },
+    }
+    const [roundOne, roundTwo, finalRound] = buildTournament(rounds, participants, results)
+    expectUniqueParticipantsAcrossHeats(roundOne)
+    expectUniqueParticipantsAcrossHeats(roundTwo)
+    expectUniqueParticipantsAcrossHeats(finalRound)
+  })
+})
+
 describe('buildTournament — round status flags', () => {
   it('reports canAdvance=false until all heats in the round are complete', () => {
     const rounds: RoundConfig[] = [
