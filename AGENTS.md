@@ -11,6 +11,10 @@ Inspect `README.md` for more information on the project and code structure.
   - `npm run build`
 - Update `README.md` as appropriate when changes are made (e.g. to the code
   structure or configuration rules).
+- Follow test-driven development where possible: before implementing a new
+  feature or fixing a bug, add a failing test that demonstrates the desired
+  behavior, then implement the code to make the test pass. Tests are written
+  using vitetest.
 
 ## Planning and implementation
 
