@@ -360,7 +360,7 @@ export const buildTournament = (
         const heatEntrants: EntrantSlot[] = []
 
         for (let i = 0; i < baselineCount; i += 1) {
-          const source = sources[sourceCursor + i]
+          const source = sources[sourceCursor]
           if (source) {
             const actualFromHeat = lastRoundHeatAdvancers[source.fromHeat] || []
             const isLastRankForSourceHeat = source.rank === prevRound.heats[source.fromHeat].advanceCount
