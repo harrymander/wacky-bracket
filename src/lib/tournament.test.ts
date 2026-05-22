@@ -110,6 +110,11 @@ describe('parseParticipantsFromCsv', () => {
     expect(parseParticipantsFromCsv(csv).map((p) => p.name)).toEqual(['Alice', 'Bob'])
   })
 
+  it('treats the first row as data when a header row lacks a "name" column', () => {
+    const csv = 'team,score\nAlice,10\nBob,8'
+    expect(parseParticipantsFromCsv(csv).map((p) => p.name)).toEqual(['team', 'Alice', 'Bob'])
+  })
+
   it('detects the name header case-insensitively', () => {
     const csv = 'NAME\nAlice\nBob'
     expect(parseParticipantsFromCsv(csv).map((p) => p.name)).toEqual(['Alice', 'Bob'])
@@ -196,6 +201,13 @@ describe('normalizeRound', () => {
     expect(round.heats).toHaveLength(1)
     expect(round.heats[0].participantSlots).toBe(2)
   })
+
+  it('inserts a default heat when the heats property is explicitly undefined', () => {
+    const round = normalizeRound({ heats: undefined }, 0)
+    expect(round.heats).toHaveLength(1)
+    expect(round.heats[0].participantSlots).toBe(2)
+    expect(round.heats[0].advanceCount).toBe(1)
+  })
 })
 
 describe('totalRoundSlots / totalRoundOutgoing', () => {
@@ -274,6 +286,32 @@ describe('validateTournament', () => {
     expect(errors.some((m) => m.includes('advancing count cannot exceed participant slots'))).toBe(true)
     expect(errors.some((m) => m.includes('Round 1 outputs 10 qualifiers'))).toBe(true)
   })
+
+  it('returns the exact accumulated errors and no spurious extras', () => {
+    const rounds: RoundConfig[] = [
+      { id: 'r1', label: 'Round 1', heats: [{ ...createHeat(0, 0, 4, 2), advanceCount: 10 }] },
+      { id: 'r2', label: 'Final', heats: [createHeat(1, 0, 5, 1)] },
+    ]
+    expect(validateTournament(makeParticipants(3), rounds)).toEqual([
+      'Round 1 requires exactly 4 participants (currently 3).',
+      'Round 1, Heat 1: advancing count cannot exceed participant slots.',
+      'Round 1 outputs 10 qualifiers, but Round 2 expects 5 entrants.',
+    ])
+  })
+
+  it('returns the exact error list when only the participant count is wrong', () => {
+    const rounds: RoundConfig[] = [
+      { id: 'r1', label: 'Round 1', heats: [createHeat(0, 0, 4, 2), createHeat(0, 1, 4, 2)] },
+      { id: 'r2', label: 'Final', heats: [createHeat(1, 0, 4, 1)] },
+    ]
+    expect(validateTournament(makeParticipants(5), rounds)).toEqual([
+      'Round 1 requires exactly 8 participants (currently 5).',
+    ])
+  })
+
+  it('short-circuits with only the no-rounds error when rounds is empty', () => {
+    expect(validateTournament(makeParticipants(4), [])).toEqual(['Add at least one round.'])
+  })
 })
 
 describe('evaluateHeatLaps', () => {
@@ -305,6 +343,22 @@ describe('evaluateHeatLaps', () => {
     expect(nonNumeric.isComplete).toBe(false)
     expect(nonNumeric.ranked).toEqual([])
     expect(nonNumeric.actualAdvancers).toEqual([])
+  })
+
+  it('marks the heat incomplete when a lap value is an empty string', () => {
+    const heat = buildHeatState(['Alice', 'Bob'], 1)
+    const evaluation = evaluateHeatLaps(heat, lapsFor(heat, [5, '']))
+    expect(evaluation.isComplete).toBe(false)
+    expect(evaluation.ranked).toEqual([])
+    expect(evaluation.actualAdvancers).toEqual([])
+  })
+
+  it('marks the heat incomplete when a lap value parses to Infinity', () => {
+    const heat = buildHeatState(['Alice', 'Bob'], 1)
+    const evaluation = evaluateHeatLaps(heat, lapsFor(heat, [5, 'Infinity']))
+    expect(evaluation.isComplete).toBe(false)
+    expect(evaluation.ranked).toEqual([])
+    expect(evaluation.actualAdvancers).toEqual([])
   })
 
   it('ranks entrants by laps (highest first)', () => {
@@ -510,6 +564,80 @@ describe('buildTournament — source slot propagation', () => {
     }
     const [, finalRound] = buildTournament(rounds, participants, results)
     expect(namesOf(finalRound.heats[0].entrants.map((e) => e.participant))).toEqual(['P1', 'P2', 'P4', 'P5'])
+  })
+
+  it('seeds completed heats and leaves incomplete heats as null when the prior round is partially complete', () => {
+    const rounds: RoundConfig[] = [
+      {
+        id: 'r1',
+        label: 'Round 1',
+        heats: [createHeat(0, 0, 3, 2), createHeat(0, 1, 3, 2)],
+      },
+      { id: 'r2', label: 'Final', heats: [createHeat(1, 0, 4, 1)] },
+    ]
+    const participants = makeParticipants(6)
+    const results: TournamentResults = {
+      r1: {
+        'round-1-heat-1': {
+          [participants[0].id]: '10',
+          [participants[1].id]: '8',
+          [participants[2].id]: '5',
+        },
+      },
+    }
+    const [roundOne, finalRound] = buildTournament(rounds, participants, results)
+
+    expect(roundOne.canAdvance).toBe(false)
+    expect(namesOf(finalRound.heats[0].entrants.map((e) => e.participant))).toEqual([
+      'P1',
+      'P2',
+      null,
+      null,
+    ])
+    expect(finalRound.heats[0].entrants.map((e) => e.source)).toEqual([
+      { fromRound: 0, fromHeat: 0, rank: 1 },
+      { fromRound: 0, fromHeat: 0, rank: 2 },
+      { fromRound: 0, fromHeat: 1, rank: 1 },
+      { fromRound: 0, fromHeat: 1, rank: 2 },
+    ])
+  })
+
+  it('treats results referencing unknown participant ids as incomplete without crashing', () => {
+    const rounds: RoundConfig[] = [
+      { id: 'r1', label: 'Round 1', heats: [createHeat(0, 0, 2, 1)] },
+      { id: 'r2', label: 'Final', heats: [createHeat(1, 0, 1, 1)] },
+    ]
+    const participants = makeParticipants(2)
+    const results: TournamentResults = {
+      r1: {
+        'round-1-heat-1': {
+          'p-99-ghost': '10',
+          'p-100-phantom': '5',
+        },
+      },
+    }
+    const [roundOne, finalRound] = buildTournament(rounds, participants, results)
+    expect(roundOne.canAdvance).toBe(false)
+    expect(finalRound.heats[0].entrants[0].participant).toBeNull()
+  })
+
+  it('ignores result entries keyed by a heat id that is not in the round', () => {
+    const rounds: RoundConfig[] = [
+      { id: 'r1', label: 'Round 1', heats: [createHeat(0, 0, 2, 1)] },
+      { id: 'r2', label: 'Final', heats: [createHeat(1, 0, 1, 1)] },
+    ]
+    const participants = makeParticipants(2)
+    const results: TournamentResults = {
+      r1: {
+        'round-1-heat-99-stale': {
+          [participants[0].id]: '10',
+          [participants[1].id]: '5',
+        },
+      },
+    }
+    const [roundOne, finalRound] = buildTournament(rounds, participants, results)
+    expect(roundOne.canAdvance).toBe(false)
+    expect(finalRound.heats[0].entrants[0].participant).toBeNull()
   })
 
   it('expands the destination heat when a boundary tie produces an extra advancer', () => {
