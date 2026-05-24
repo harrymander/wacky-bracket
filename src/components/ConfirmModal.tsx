@@ -5,6 +5,7 @@ type ConfirmModalProps = {
   title: string
   message: string
   confirmLabel: string
+  confirmClassName?: string
   onConfirm: () => void
   onCancel: () => void
   onExportJson: () => void
@@ -15,6 +16,7 @@ export const ConfirmModal = ({
   title,
   message,
   confirmLabel,
+  confirmClassName = '',
   onConfirm,
   onCancel,
   onExportJson,
@@ -41,7 +43,7 @@ export const ConfirmModal = ({
           <button type="button" onClick={onExportJson}>
             Export JSON
           </button>
-          <button type="button" onClick={onConfirm}>
+          <button type="button" className={confirmClassName || undefined} onClick={onConfirm}>
             {confirmLabel}
           </button>
           <button type="button" className="ghost" onClick={onCancel}>

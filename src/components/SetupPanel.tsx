@@ -92,7 +92,7 @@ export const SetupPanel = ({
           Import JSON
           <input name="import-json-file" type="file" accept="application/json" onChange={handleImportJson} />
         </label>
-        <button type="button" className="ghost" onClick={onRequestReset}>
+        <button type="button" className="danger" onClick={onRequestReset}>
           Reset
         </button>
       </div>
@@ -118,7 +118,7 @@ export const SetupPanel = ({
       />
 
       <div className="io-row">
-        <button type="button" disabled={!hasPendingChanges || errors.length > 0} onClick={onRequestApply}>
+        <button type="button" className="primary" disabled={!hasPendingChanges || errors.length > 0} onClick={onRequestApply}>
           Apply
         </button>
         <button type="button" className="ghost" disabled={!hasPendingChanges} onClick={onRevertDrafts}>
@@ -145,6 +145,7 @@ export const SetupPanel = ({
         title="Apply changes?"
         message="Applying these changes will reset all bracket results. You may want to export your current state first."
         confirmLabel="Apply"
+        confirmClassName="primary"
         onConfirm={onConfirmApply}
         onCancel={onCancelApply}
         onExportJson={onExportJson}
@@ -155,6 +156,7 @@ export const SetupPanel = ({
         title="Reset tournament?"
         message="This will reset all configuration and bracket results to defaults. You may want to export your current state first."
         confirmLabel="Reset"
+        confirmClassName="danger"
         onConfirm={onConfirmReset}
         onCancel={onCancelReset}
         onExportJson={onExportJson}
@@ -165,6 +167,7 @@ export const SetupPanel = ({
         title="Import tournament?"
         message="This will replace all configuration and bracket results with the imported data. You may want to export your current state first."
         confirmLabel="Import"
+        confirmClassName="primary"
         onConfirm={onConfirmImport}
         onCancel={onCancelImport}
         onExportJson={onExportJson}

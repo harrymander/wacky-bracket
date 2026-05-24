@@ -23,6 +23,18 @@ button.ghost {
   background: transparent;
 }
 
+button.primary {
+  background: #2563eb;
+  border-color: #1d4ed8;
+  color: #ffffff;
+}
+
+button.danger {
+  background: #dc2626;
+  border-color: #b91c1c;
+  color: #ffffff;
+}
+
 button:disabled {
   opacity: 0.4;
   cursor: default;
