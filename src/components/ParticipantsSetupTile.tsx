@@ -5,7 +5,6 @@ type ParticipantsSetupTileProps = {
   participantLines: string
   onToggleOpen: () => void
   onParticipantLinesChange: (value: string) => void
-  onApplyParticipants: () => void
   onImportCsvFromFile: (file: File | undefined) => Promise<void>
 }
 
@@ -14,7 +13,6 @@ export const ParticipantsSetupTile = ({
   participantLines,
   onToggleOpen,
   onParticipantLinesChange,
-  onApplyParticipants,
   onImportCsvFromFile,
 }: ParticipantsSetupTileProps) => {
   const handleImportCsv = async (event: ChangeEvent<HTMLInputElement>) => {
@@ -43,9 +41,6 @@ export const ParticipantsSetupTile = ({
             onChange={(event) => onParticipantLinesChange(event.target.value)}
           />
           <div className="io-row">
-            <button type="button" onClick={onApplyParticipants}>
-              Apply participant list
-            </button>
             <label className="file-button">
               Import participants CSV
               <input name="import-participants-csv" type="file" accept=".csv,text/csv" onChange={handleImportCsv} />

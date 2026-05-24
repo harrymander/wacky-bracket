@@ -21,20 +21,25 @@ function App() {
       {!isDisplayMode ? (
         <section className="panel">
           <SetupPanel
-            rounds={state.rounds}
+            draftRounds={state.draftRounds}
             participantLines={state.participantLines}
             participantsOpen={state.participantsOpen}
             roundsOpen={state.roundsOpen}
             statusMessage={state.statusMessage}
             errors={state.errors}
+            hasPendingChanges={state.hasPendingChanges}
+            confirmModalOpen={state.confirmModalOpen}
             onExportJson={state.exportJson}
             onImportJsonFromFile={state.importJsonFromFile}
             onResetState={state.resetState}
             onToggleParticipantsOpen={state.toggleParticipantsOpen}
             onToggleRoundsOpen={state.toggleRoundsOpen}
             onParticipantLinesChange={state.setParticipantLines}
-            onApplyParticipants={state.applyParticipants}
             onImportCsvFromFile={state.importCsvFromFile}
+            onRequestApply={state.requestApply}
+            onConfirmApply={state.confirmApply}
+            onRevertDrafts={state.revertDrafts}
+            onCancelApply={state.cancelApply}
             onAddRound={state.addRound}
             onRemoveRound={state.removeRound}
             onAddHeat={state.addHeat}

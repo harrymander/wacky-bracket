@@ -5,10 +5,12 @@ import {
   DEFAULT_PARTICIPANTS,
   DEFAULT_ROUNDS,
   evaluateHeatLaps,
+  hasStructuralRoundChanges,
   normalizeHeat,
   normalizeRound,
   parseParticipantsFromCsv,
   parseParticipantsFromLines,
+  roundsAreEqual,
   totalRoundOutgoing,
   totalRoundSlots,
   validateTournament,
@@ -222,6 +224,95 @@ describe('totalRoundSlots / totalRoundOutgoing', () => {
     }
     expect(totalRoundSlots(round)).toBe(21)
     expect(totalRoundOutgoing(round)).toBe(11)
+  })
+})
+
+describe('roundsAreEqual', () => {
+  const base: RoundConfig[] = [
+    { id: 'r1', label: 'Round 1', heats: [createHeat(0, 0, 4, 2), createHeat(0, 1, 4, 2)] },
+    { id: 'r2', label: 'Final', heats: [createHeat(1, 0, 4, 1)] },
+  ]
+
+  it('returns true for identical rounds', () => {
+    const copy = JSON.parse(JSON.stringify(base)) as RoundConfig[]
+    expect(roundsAreEqual(base, copy)).toBe(true)
+  })
+
+  it('returns false when a label differs', () => {
+    const modified = JSON.parse(JSON.stringify(base)) as RoundConfig[]
+    modified[0].label = 'Prelims'
+    expect(roundsAreEqual(base, modified)).toBe(false)
+  })
+
+  it('returns false when a heat label differs', () => {
+    const modified = JSON.parse(JSON.stringify(base)) as RoundConfig[]
+    modified[0].heats[0].label = 'Renamed'
+    expect(roundsAreEqual(base, modified)).toBe(false)
+  })
+
+  it('returns false when participantSlots differ', () => {
+    const modified = JSON.parse(JSON.stringify(base)) as RoundConfig[]
+    modified[0].heats[0].participantSlots = 99
+    expect(roundsAreEqual(base, modified)).toBe(false)
+  })
+
+  it('returns false when round count differs', () => {
+    expect(roundsAreEqual(base, [base[0]])).toBe(false)
+  })
+
+  it('returns false when heat count differs', () => {
+    const modified = JSON.parse(JSON.stringify(base)) as RoundConfig[]
+    modified[0].heats.push(createHeat(0, 2, 3, 1))
+    expect(roundsAreEqual(base, modified)).toBe(false)
+  })
+
+  it('returns true for two empty arrays', () => {
+    expect(roundsAreEqual([], [])).toBe(true)
+  })
+})
+
+describe('hasStructuralRoundChanges', () => {
+  const base: RoundConfig[] = [
+    { id: 'r1', label: 'Round 1', heats: [createHeat(0, 0, 4, 2), createHeat(0, 1, 4, 2)] },
+    { id: 'r2', label: 'Final', heats: [createHeat(1, 0, 4, 1)] },
+  ]
+
+  it('returns false for identical rounds', () => {
+    const copy = JSON.parse(JSON.stringify(base)) as RoundConfig[]
+    expect(hasStructuralRoundChanges(base, copy)).toBe(false)
+  })
+
+  it('returns false when only labels differ', () => {
+    const modified = JSON.parse(JSON.stringify(base)) as RoundConfig[]
+    modified[0].label = 'Prelims'
+    modified[0].heats[0].label = 'Renamed Heat'
+    expect(hasStructuralRoundChanges(base, modified)).toBe(false)
+  })
+
+  it('returns true when participantSlots differ', () => {
+    const modified = JSON.parse(JSON.stringify(base)) as RoundConfig[]
+    modified[0].heats[0].participantSlots = 6
+    expect(hasStructuralRoundChanges(base, modified)).toBe(true)
+  })
+
+  it('returns true when advanceCount differs', () => {
+    const modified = JSON.parse(JSON.stringify(base)) as RoundConfig[]
+    modified[0].heats[0].advanceCount = 1
+    expect(hasStructuralRoundChanges(base, modified)).toBe(true)
+  })
+
+  it('returns true when heat count differs', () => {
+    const modified = JSON.parse(JSON.stringify(base)) as RoundConfig[]
+    modified[0].heats.push(createHeat(0, 2, 3, 1))
+    expect(hasStructuralRoundChanges(base, modified)).toBe(true)
+  })
+
+  it('returns true when round count differs', () => {
+    expect(hasStructuralRoundChanges(base, [base[0]])).toBe(true)
+  })
+
+  it('returns false for two empty arrays', () => {
+    expect(hasStructuralRoundChanges([], [])).toBe(false)
   })
 })
 

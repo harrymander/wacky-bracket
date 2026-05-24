@@ -325,6 +325,36 @@ const sourceSlotsForRound = (round: RoundConfig, roundIndex: number): SourceSlot
   return slots
 }
 
+export const roundsAreEqual = (a: RoundConfig[], b: RoundConfig[]): boolean => {
+  if (a.length !== b.length) return false
+  return a.every((round, i) => {
+    const other = b[i]
+    if (round.id !== other.id || round.label !== other.label) return false
+    if (round.heats.length !== other.heats.length) return false
+    return round.heats.every((heat, j) => {
+      const otherHeat = other.heats[j]
+      return (
+        heat.id === otherHeat.id &&
+        heat.label === otherHeat.label &&
+        heat.participantSlots === otherHeat.participantSlots &&
+        heat.advanceCount === otherHeat.advanceCount
+      )
+    })
+  })
+}
+
+export const hasStructuralRoundChanges = (a: RoundConfig[], b: RoundConfig[]): boolean => {
+  if (a.length !== b.length) return true
+  return a.some((round, i) => {
+    const other = b[i]
+    if (round.heats.length !== other.heats.length) return true
+    return round.heats.some((heat, j) => {
+      const otherHeat = other.heats[j]
+      return heat.participantSlots !== otherHeat.participantSlots || heat.advanceCount !== otherHeat.advanceCount
+    })
+  })
+}
+
 export const buildTournament = (
   rounds: RoundConfig[],
   participants: Participant[],

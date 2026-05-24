@@ -4,9 +4,11 @@ import {
   DEFAULT_ROUNDS,
   buildTournament,
   createHeat,
+  hasStructuralRoundChanges,
   normalizeRound,
   parseParticipantsFromCsv,
   parseParticipantsFromLines,
+  roundsAreEqual,
   totalRoundOutgoing,
   type RoundConfig,
   type TournamentResults,
@@ -92,10 +94,23 @@ export const useTournamentState = () => {
       .join('\n'),
   )
   const [statusMessage, setStatusMessage] = useState('')
+  const [draftRounds, setDraftRounds] = useState(() => ensureFinalRoundShape(getStoredState().rounds))
+  const [confirmModalOpen, setConfirmModalOpen] = useState(false)
   const [participantsOpen, setParticipantsOpen] = useState(false)
   const [roundsOpen, setRoundsOpen] = useState(false)
 
-  const errors = useMemo(() => validateTournament(participants, rounds), [participants, rounds])
+  const draftParticipants = useMemo(() => parseParticipantsFromLines(participantLines), [participantLines])
+  const committedParticipantLines = useMemo(() => participants.map((e) => e.name).join('\n'), [participants])
+  const hasPendingChanges = useMemo(
+    () => participantLines !== committedParticipantLines || !roundsAreEqual(draftRounds, rounds),
+    [participantLines, committedParticipantLines, draftRounds, rounds],
+  )
+  const hasStructuralChanges = useMemo(() => {
+    const participantNamesChanged = participantLines !== committedParticipantLines
+    return participantNamesChanged || hasStructuralRoundChanges(draftRounds, rounds)
+  }, [participantLines, committedParticipantLines, draftRounds, rounds])
+
+  const errors = useMemo(() => validateTournament(draftParticipants, draftRounds), [draftParticipants, draftRounds])
   const roundStates = useMemo(() => buildTournament(rounds, participants, results), [rounds, participants, results])
 
   useEffect(() => {
@@ -112,6 +127,7 @@ export const useTournamentState = () => {
       setRounds(ensureFinalRoundShape(next.rounds))
       setResults(next.results)
       setParticipantLines(next.participants.map((entry) => entry.name).join('\n'))
+      setDraftRounds(ensureFinalRoundShape(next.rounds))
     }
 
     window.addEventListener('storage', syncFromStorage)
@@ -120,16 +136,42 @@ export const useTournamentState = () => {
 
   const clearStatus = () => setStatusMessage('')
 
-  const applyParticipants = () => {
+  const applyDrafts = () => {
     clearStatus()
     const parsed = parseParticipantsFromLines(participantLines)
     if (parsed.length === 0) {
+      setConfirmModalOpen(false)
       setStatusMessage('Participant list is empty.')
       return
     }
+    const structural = hasStructuralChanges
     setParticipants(parsed)
-    setResults({})
-    setStatusMessage(`Loaded ${parsed.length} participants.`)
+    setRounds(draftRounds)
+    if (structural) {
+      setResults({})
+    }
+    setConfirmModalOpen(false)
+    setStatusMessage('Configuration applied.')
+  }
+
+  const requestApply = () => {
+    if (!hasPendingChanges || errors.length > 0) return
+    const resultsExist = Object.keys(results).length > 0
+    if (hasStructuralChanges && resultsExist) {
+      setConfirmModalOpen(true)
+    } else {
+      applyDrafts()
+    }
+  }
+
+  const revertDrafts = () => {
+    setDraftRounds(rounds)
+    setParticipantLines(committedParticipantLines)
+    clearStatus()
+  }
+
+  const cancelApply = () => {
+    setConfirmModalOpen(false)
   }
 
   const importCsvFromFile = async (file: File | undefined) => {
@@ -143,10 +185,8 @@ export const useTournamentState = () => {
       setStatusMessage('No participant names found in CSV.')
       return
     }
-    setParticipants(parsed)
     setParticipantLines(parsed.map((entry) => entry.name).join('\n'))
-    setResults({})
-    setStatusMessage(`Imported ${parsed.length} participants from CSV.`)
+    setStatusMessage(`Loaded ${parsed.length} participants from CSV. Click Apply to confirm.`)
   }
 
   const updateHeat = (
@@ -156,7 +196,7 @@ export const useTournamentState = () => {
     value: string,
   ) => {
     clearStatus()
-    setRounds((previous) =>
+    setDraftRounds((previous) =>
       ensureFinalRoundShape(
         previous.map((round, currentRoundIndex) => {
         if (currentRoundIndex !== roundIndex) {
@@ -178,12 +218,11 @@ export const useTournamentState = () => {
       }),
       ),
     )
-    setResults({})
   }
 
   const addHeat = (roundIndex: number) => {
     clearStatus()
-    setRounds((previous) =>
+    setDraftRounds((previous) =>
       ensureFinalRoundShape(
         previous.map((round, currentRoundIndex) => {
         if (currentRoundIndex !== roundIndex) {
@@ -196,12 +235,11 @@ export const useTournamentState = () => {
       }),
       ),
     )
-    setResults({})
   }
 
   const removeHeat = (roundIndex: number, heatIndex: number) => {
     clearStatus()
-    setRounds((previous) =>
+    setDraftRounds((previous) =>
       ensureFinalRoundShape(
         previous.map((round, currentRoundIndex) => {
         if (currentRoundIndex !== roundIndex || round.heats.length <= 1) {
@@ -214,12 +252,11 @@ export const useTournamentState = () => {
       }),
       ),
     )
-    setResults({})
   }
 
   const addRound = () => {
     clearStatus()
-    setRounds((previous) => {
+    setDraftRounds((previous) => {
       const prelimRounds = previous.slice(0, -1)
       const sourceRound = prelimRounds[prelimRounds.length - 1]
       const incoming = totalRoundOutgoing(sourceRound)
@@ -233,24 +270,22 @@ export const useTournamentState = () => {
       ]
       return ensureFinalRoundShape(nextRounds)
     })
-    setResults({})
   }
 
   const removeRound = () => {
     clearStatus()
-    setRounds((previous) => {
+    setDraftRounds((previous) => {
       const prelimRounds = previous.slice(0, -1)
       if (prelimRounds.length <= 1) {
         return previous
       }
       return ensureFinalRoundShape(prelimRounds.slice(0, -1))
     })
-    setResults({})
   }
 
   const updateRoundLabel = (roundIndex: number, value: string) => {
     clearStatus()
-    setRounds((previous) =>
+    setDraftRounds((previous) =>
       ensureFinalRoundShape(
         previous.map((round, currentRoundIndex) => {
         if (currentRoundIndex !== roundIndex) {
@@ -283,6 +318,8 @@ export const useTournamentState = () => {
     setRounds(ensureFinalRoundShape(DEFAULT_STATE.rounds))
     setResults({})
     setParticipantLines(DEFAULT_STATE.participants.map((entry) => entry.name).join('\n'))
+    setDraftRounds(ensureFinalRoundShape(DEFAULT_STATE.rounds))
+    setConfirmModalOpen(false)
     setStatusMessage('Reset to default wacky-bracket.')
   }
 
@@ -320,6 +357,8 @@ export const useTournamentState = () => {
       setRounds(ensureFinalRoundShape(nextRounds))
       setResults(nextResults)
       setParticipantLines(nextParticipants.map((entry) => entry.name).join('\n'))
+      setDraftRounds(ensureFinalRoundShape(nextRounds))
+      setConfirmModalOpen(false)
       setStatusMessage('Tournament imported from JSON.')
     } catch {
       setStatusMessage('JSON import failed: invalid JSON.')
@@ -339,16 +378,22 @@ export const useTournamentState = () => {
     participants,
     rounds,
     results,
+    draftRounds,
     participantLines,
     statusMessage,
     participantsOpen,
     roundsOpen,
     errors,
     roundStates,
+    hasPendingChanges,
+    confirmModalOpen,
     setParticipantLines,
     toggleParticipantsOpen: () => setParticipantsOpen((value) => !value),
     toggleRoundsOpen: () => setRoundsOpen((value) => !value),
-    applyParticipants,
+    requestApply,
+    confirmApply: applyDrafts,
+    revertDrafts,
+    cancelApply,
     importCsvFromFile,
     updateHeat,
     addHeat,

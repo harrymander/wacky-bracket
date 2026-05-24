@@ -1,23 +1,29 @@
 import { type ChangeEvent } from 'react'
 import { type RoundConfig } from '../lib/tournament'
+import { ConfirmApplyModal } from './ConfirmApplyModal'
 import { ParticipantsSetupTile } from './ParticipantsSetupTile'
 import { RoundsSetupTile } from './RoundsSetupTile'
 
 type SetupPanelProps = {
-  rounds: RoundConfig[]
+  draftRounds: RoundConfig[]
   participantLines: string
   participantsOpen: boolean
   roundsOpen: boolean
   statusMessage: string
   errors: string[]
+  hasPendingChanges: boolean
+  confirmModalOpen: boolean
   onExportJson: () => void
   onImportJsonFromFile: (file: File | undefined) => Promise<void>
   onResetState: () => void
   onToggleParticipantsOpen: () => void
   onToggleRoundsOpen: () => void
   onParticipantLinesChange: (value: string) => void
-  onApplyParticipants: () => void
   onImportCsvFromFile: (file: File | undefined) => Promise<void>
+  onRequestApply: () => void
+  onConfirmApply: () => void
+  onRevertDrafts: () => void
+  onCancelApply: () => void
   onAddRound: () => void
   onRemoveRound: () => void
   onAddHeat: (roundIndex: number) => void
@@ -32,20 +38,25 @@ type SetupPanelProps = {
 }
 
 export const SetupPanel = ({
-  rounds,
+  draftRounds,
   participantLines,
   participantsOpen,
   roundsOpen,
   statusMessage,
   errors,
+  hasPendingChanges,
+  confirmModalOpen,
   onExportJson,
   onImportJsonFromFile,
   onResetState,
   onToggleParticipantsOpen,
   onToggleRoundsOpen,
   onParticipantLinesChange,
-  onApplyParticipants,
   onImportCsvFromFile,
+  onRequestApply,
+  onConfirmApply,
+  onRevertDrafts,
+  onCancelApply,
   onAddRound,
   onRemoveRound,
   onAddHeat,
@@ -79,13 +90,12 @@ export const SetupPanel = ({
         participantLines={participantLines}
         onToggleOpen={onToggleParticipantsOpen}
         onParticipantLinesChange={onParticipantLinesChange}
-        onApplyParticipants={onApplyParticipants}
         onImportCsvFromFile={onImportCsvFromFile}
       />
 
       <RoundsSetupTile
         roundsOpen={roundsOpen}
-        rounds={rounds}
+        rounds={draftRounds}
         onToggleOpen={onToggleRoundsOpen}
         onAddRound={onAddRound}
         onRemoveRound={onRemoveRound}
@@ -94,6 +104,15 @@ export const SetupPanel = ({
         onUpdateRoundLabel={onUpdateRoundLabel}
         onUpdateHeat={onUpdateHeat}
       />
+
+      <div className="io-row">
+        <button type="button" disabled={!hasPendingChanges || errors.length > 0} onClick={onRequestApply}>
+          Apply
+        </button>
+        <button type="button" className="ghost" disabled={!hasPendingChanges} onClick={onRevertDrafts}>
+          Revert
+        </button>
+      </div>
 
       {statusMessage ? <p className="status">{statusMessage}</p> : null}
       {errors.length > 0 ? (
@@ -108,6 +127,13 @@ export const SetupPanel = ({
       ) : (
         <p className="ok">Configuration is valid.</p>
       )}
+
+      <ConfirmApplyModal
+        open={confirmModalOpen}
+        onConfirm={onConfirmApply}
+        onCancel={onCancelApply}
+        onExportJson={onExportJson}
+      />
     </>
   )
 }
