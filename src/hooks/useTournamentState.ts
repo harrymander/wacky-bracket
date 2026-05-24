@@ -96,6 +96,7 @@ export const useTournamentState = () => {
   const [statusMessage, setStatusMessage] = useState('')
   const [draftRounds, setDraftRounds] = useState(() => ensureFinalRoundShape(getStoredState().rounds))
   const [confirmModalOpen, setConfirmModalOpen] = useState(false)
+  const [confirmResetOpen, setConfirmResetOpen] = useState(false)
   const [participantsOpen, setParticipantsOpen] = useState(false)
   const [roundsOpen, setRoundsOpen] = useState(false)
 
@@ -320,7 +321,16 @@ export const useTournamentState = () => {
     setParticipantLines(DEFAULT_STATE.participants.map((entry) => entry.name).join('\n'))
     setDraftRounds(ensureFinalRoundShape(DEFAULT_STATE.rounds))
     setConfirmModalOpen(false)
+    setConfirmResetOpen(false)
     setStatusMessage('Reset to default wacky-bracket.')
+  }
+
+  const requestReset = () => {
+    setConfirmResetOpen(true)
+  }
+
+  const cancelReset = () => {
+    setConfirmResetOpen(false)
   }
 
   const exportJson = () => {
@@ -387,6 +397,7 @@ export const useTournamentState = () => {
     roundStates,
     hasPendingChanges,
     confirmModalOpen,
+    confirmResetOpen,
     setParticipantLines,
     toggleParticipantsOpen: () => setParticipantsOpen((value) => !value),
     toggleRoundsOpen: () => setRoundsOpen((value) => !value),
@@ -402,7 +413,9 @@ export const useTournamentState = () => {
     removeRound,
     updateRoundLabel,
     setLaps,
-    resetState,
+    requestReset,
+    confirmReset: resetState,
+    cancelReset,
     exportJson,
     importJsonFromFile,
     openDisplayPopout,

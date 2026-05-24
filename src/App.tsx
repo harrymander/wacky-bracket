@@ -29,9 +29,12 @@ function App() {
             errors={state.errors}
             hasPendingChanges={state.hasPendingChanges}
             confirmModalOpen={state.confirmModalOpen}
+            confirmResetOpen={state.confirmResetOpen}
             onExportJson={state.exportJson}
             onImportJsonFromFile={state.importJsonFromFile}
-            onResetState={state.resetState}
+            onRequestReset={state.requestReset}
+            onConfirmReset={state.confirmReset}
+            onCancelReset={state.cancelReset}
             onToggleParticipantsOpen={state.toggleParticipantsOpen}
             onToggleRoundsOpen={state.toggleRoundsOpen}
             onParticipantLinesChange={state.setParticipantLines}

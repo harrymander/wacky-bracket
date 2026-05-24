@@ -1,6 +1,6 @@
 import { type ChangeEvent } from 'react'
 import { type RoundConfig } from '../lib/tournament'
-import { ConfirmApplyModal } from './ConfirmApplyModal'
+import { ConfirmModal } from './ConfirmModal'
 import { ParticipantsSetupTile } from './ParticipantsSetupTile'
 import { RoundsSetupTile } from './RoundsSetupTile'
 
@@ -13,9 +13,12 @@ type SetupPanelProps = {
   errors: string[]
   hasPendingChanges: boolean
   confirmModalOpen: boolean
+  confirmResetOpen: boolean
   onExportJson: () => void
   onImportJsonFromFile: (file: File | undefined) => Promise<void>
-  onResetState: () => void
+  onRequestReset: () => void
+  onConfirmReset: () => void
+  onCancelReset: () => void
   onToggleParticipantsOpen: () => void
   onToggleRoundsOpen: () => void
   onParticipantLinesChange: (value: string) => void
@@ -46,9 +49,12 @@ export const SetupPanel = ({
   errors,
   hasPendingChanges,
   confirmModalOpen,
+  confirmResetOpen,
   onExportJson,
   onImportJsonFromFile,
-  onResetState,
+  onRequestReset,
+  onConfirmReset,
+  onCancelReset,
   onToggleParticipantsOpen,
   onToggleRoundsOpen,
   onParticipantLinesChange,
@@ -80,7 +86,7 @@ export const SetupPanel = ({
           Import JSON
           <input name="import-json-file" type="file" accept="application/json" onChange={handleImportJson} />
         </label>
-        <button type="button" className="ghost" onClick={onResetState}>
+        <button type="button" className="ghost" onClick={onRequestReset}>
           Reset
         </button>
       </div>
@@ -128,10 +134,23 @@ export const SetupPanel = ({
         <p className="ok">Configuration is valid.</p>
       )}
 
-      <ConfirmApplyModal
+      <ConfirmModal
         open={confirmModalOpen}
+        title="Apply changes?"
+        message="Applying these changes will reset all bracket results. You may want to export your current state first."
+        confirmLabel="Apply"
         onConfirm={onConfirmApply}
         onCancel={onCancelApply}
+        onExportJson={onExportJson}
+      />
+
+      <ConfirmModal
+        open={confirmResetOpen}
+        title="Reset tournament?"
+        message="This will reset all configuration and bracket results to defaults. You may want to export your current state first."
+        confirmLabel="Reset"
+        onConfirm={onConfirmReset}
+        onCancel={onCancelReset}
         onExportJson={onExportJson}
       />
     </>
