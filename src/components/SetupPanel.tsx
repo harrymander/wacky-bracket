@@ -14,8 +14,11 @@ type SetupPanelProps = {
   hasPendingChanges: boolean
   confirmModalOpen: boolean
   confirmResetOpen: boolean
+  confirmImportOpen: boolean
   onExportJson: () => void
   onImportJsonFromFile: (file: File | undefined) => Promise<void>
+  onConfirmImport: () => void
+  onCancelImport: () => void
   onRequestReset: () => void
   onConfirmReset: () => void
   onCancelReset: () => void
@@ -50,8 +53,11 @@ export const SetupPanel = ({
   hasPendingChanges,
   confirmModalOpen,
   confirmResetOpen,
+  confirmImportOpen,
   onExportJson,
   onImportJsonFromFile,
+  onConfirmImport,
+  onCancelImport,
   onRequestReset,
   onConfirmReset,
   onCancelReset,
@@ -151,6 +157,16 @@ export const SetupPanel = ({
         confirmLabel="Reset"
         onConfirm={onConfirmReset}
         onCancel={onCancelReset}
+        onExportJson={onExportJson}
+      />
+
+      <ConfirmModal
+        open={confirmImportOpen}
+        title="Import tournament?"
+        message="This will replace all configuration and bracket results with the imported data. You may want to export your current state first."
+        confirmLabel="Import"
+        onConfirm={onConfirmImport}
+        onCancel={onCancelImport}
         onExportJson={onExportJson}
       />
     </>

@@ -30,8 +30,11 @@ function App() {
             hasPendingChanges={state.hasPendingChanges}
             confirmModalOpen={state.confirmModalOpen}
             confirmResetOpen={state.confirmResetOpen}
+            confirmImportOpen={state.confirmImportOpen}
             onExportJson={state.exportJson}
             onImportJsonFromFile={state.importJsonFromFile}
+            onConfirmImport={state.confirmImport}
+            onCancelImport={state.cancelImport}
             onRequestReset={state.requestReset}
             onConfirmReset={state.confirmReset}
             onCancelReset={state.cancelReset}

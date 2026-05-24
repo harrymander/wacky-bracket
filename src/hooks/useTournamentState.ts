@@ -97,6 +97,7 @@ export const useTournamentState = () => {
   const [draftRounds, setDraftRounds] = useState(() => ensureFinalRoundShape(getStoredState().rounds))
   const [confirmModalOpen, setConfirmModalOpen] = useState(false)
   const [confirmResetOpen, setConfirmResetOpen] = useState(false)
+  const [pendingImport, setPendingImport] = useState<StoredState | null>(null)
   const [participantsOpen, setParticipantsOpen] = useState(false)
   const [roundsOpen, setRoundsOpen] = useState(false)
 
@@ -363,16 +364,26 @@ export const useTournamentState = () => {
         setStatusMessage('JSON import failed: missing participants or rounds.')
         return
       }
-      setParticipants(nextParticipants)
-      setRounds(ensureFinalRoundShape(nextRounds))
-      setResults(nextResults)
-      setParticipantLines(nextParticipants.map((entry) => entry.name).join('\n'))
-      setDraftRounds(ensureFinalRoundShape(nextRounds))
-      setConfirmModalOpen(false)
-      setStatusMessage('Tournament imported from JSON.')
+      setPendingImport({ participants: nextParticipants, rounds: nextRounds, results: nextResults })
     } catch {
       setStatusMessage('JSON import failed: invalid JSON.')
     }
+  }
+
+  const confirmImport = () => {
+    if (!pendingImport) return
+    setParticipants(pendingImport.participants)
+    setRounds(ensureFinalRoundShape(pendingImport.rounds))
+    setResults(pendingImport.results)
+    setParticipantLines(pendingImport.participants.map((entry) => entry.name).join('\n'))
+    setDraftRounds(ensureFinalRoundShape(pendingImport.rounds))
+    setPendingImport(null)
+    setConfirmModalOpen(false)
+    setStatusMessage('Tournament imported from JSON.')
+  }
+
+  const cancelImport = () => {
+    setPendingImport(null)
   }
 
   const openDisplayPopout = () => {
@@ -398,6 +409,7 @@ export const useTournamentState = () => {
     hasPendingChanges,
     confirmModalOpen,
     confirmResetOpen,
+    confirmImportOpen: pendingImport !== null,
     setParticipantLines,
     toggleParticipantsOpen: () => setParticipantsOpen((value) => !value),
     toggleRoundsOpen: () => setRoundsOpen((value) => !value),
@@ -405,6 +417,8 @@ export const useTournamentState = () => {
     confirmApply: applyDrafts,
     revertDrafts,
     cancelApply,
+    confirmImport,
+    cancelImport,
     importCsvFromFile,
     updateHeat,
     addHeat,
