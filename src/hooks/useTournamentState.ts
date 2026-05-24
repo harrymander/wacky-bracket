@@ -334,6 +334,16 @@ export const useTournamentState = () => {
     setConfirmResetOpen(false)
   }
 
+  const formatExportTimestamp = (value: Date) => {
+    const year = value.getFullYear()
+    const month = String(value.getMonth() + 1).padStart(2, '0')
+    const day = String(value.getDate()).padStart(2, '0')
+    const hours = String(value.getHours()).padStart(2, '0')
+    const minutes = String(value.getMinutes()).padStart(2, '0')
+    const seconds = String(value.getSeconds()).padStart(2, '0')
+    return `${year}-${month}-${day}-${hours}${minutes}${seconds}`
+  }
+
   const exportJson = () => {
     const blob = new Blob([JSON.stringify({ participants, rounds, results }, null, 2)], {
       type: 'application/json',
@@ -341,7 +351,7 @@ export const useTournamentState = () => {
     const url = window.URL.createObjectURL(blob)
     const link = document.createElement('a')
     link.href = url
-    link.download = 'wacky-bracket.json'
+    link.download = `wacky-bracket-${formatExportTimestamp(new Date())}.json`
     link.click()
     window.URL.revokeObjectURL(url)
   }
