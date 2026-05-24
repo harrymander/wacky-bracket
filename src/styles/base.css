@@ -23,6 +23,11 @@ button.ghost {
   background: transparent;
 }
 
+button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
 .file-button {
   display: inline-flex;
   align-items: center;
