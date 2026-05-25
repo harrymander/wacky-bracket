@@ -121,6 +121,11 @@ const BracketPanelContent = ({ roundStates, results, isDisplayMode, onSetLaps }:
                   })
                   .filter((value): value is readonly [string, number] => value !== null),
               )
+              const advancingSlotById = new Map<string, number>()
+              ranking.actualAdvancers.forEach((participant, index) => {
+                const slotIndex = index < heat.advanceCount - 1 ? index + 1 : heat.advanceCount
+                advancingSlotById.set(participant.id, slotIndex)
+              })
               const orderedEntrants = [...heat.entrants].sort((a, b) => {
                 if (!isDisplayMode) {
                   return 0
@@ -198,12 +203,10 @@ const BracketPanelContent = ({ roundStates, results, isDisplayMode, onSetLaps }:
                           ? ranking.ranked.find((entry) => entry.entrant.participant?.id === participant.id)
                           : null
                         const advancingRank = rankingEntry ? rankingEntry.rank : 0
-
-                        // Map extra advancers (from boundary ties) to the destination of the last qualifying rank
-                        const mappingRank = Math.min(advancingRank, heat.advanceCount)
+                        const advancingSlot = participant ? (advancingSlotById.get(participant.id) ?? 0) : 0
                         const destinationHeat =
-                          isAdvancing && roundIndex < roundStates.length - 1 && mappingRank > 0
-                            ? destinationHeatMap.get(`${originalHeatIndex}-${mappingRank}`)
+                          isAdvancing && roundIndex < roundStates.length - 1 && advancingSlot > 0
+                            ? destinationHeatMap.get(`${originalHeatIndex}-${advancingSlot}`)
                             : undefined
                         const isFinalRound = roundIndex === roundStates.length - 1
                         const medalRank =
