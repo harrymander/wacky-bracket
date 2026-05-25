@@ -1786,6 +1786,26 @@ describe('ensureFinalRoundShape', () => {
     expect(result[1].id).not.toBe('round-1')
     expect(result[1].label).toBe('Final')
   })
+
+  it('preserves the existing final heat id when the last round is labeled Final', () => {
+    const existingHeatId = 'existing-heat-uuid'
+    const input: RoundConfig[] = [
+      { id: 'round-1', label: 'Round 1', heats: [createHeat(0, 10, 5)] },
+      { id: 'round-2', label: 'Final', heats: [{ ...createHeat(0, 5, 1), id: existingHeatId }] },
+    ]
+    const result = ensureFinalRoundShape(input)
+    expect(result[result.length - 1].heats[0].id).toBe(existingHeatId)
+  })
+
+  it('produces the same final heat id on repeated calls with the same input', () => {
+    const input: RoundConfig[] = [
+      { id: 'round-1', label: 'Round 1', heats: [createHeat(0, 10, 5)] },
+      { id: 'round-2', label: 'Final', heats: [{ ...createHeat(0, 5, 1), id: 'final-heat-uuid' }] },
+    ]
+    const first = ensureFinalRoundShape(input)
+    const second = ensureFinalRoundShape(input)
+    expect(first[first.length - 1].heats[0].id).toBe(second[second.length - 1].heats[0].id)
+  })
 })
 
 describe('shuffleLines', () => {

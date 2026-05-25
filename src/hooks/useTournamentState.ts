@@ -71,7 +71,7 @@ export const ensureFinalRoundShape = (inputRounds: RoundConfig[]): RoundConfig[]
   const finalId = existingFinal?.id || generateId()
   const finalHeat = {
     ...createHeat(0, finalIncomingSlots, 1),
-    id: generateId(),
+    id: existingFinal?.heats?.[0]?.id || generateId(),
     label: 'Final',
     participantSlots: finalIncomingSlots,
     advanceCount: 1,
