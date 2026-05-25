@@ -28,6 +28,7 @@ export type EntrantSlot = {
 
 export type HeatState = HeatConfig & {
   entrants: EntrantSlot[]
+  configuredSlots: number
 }
 
 export type RoundState = Omit<RoundConfig, 'heats'> & {
@@ -451,16 +452,16 @@ export const buildTournament = (
     if (roundIndex === 0) {
       let cursor = 0
       round.heats.forEach((heat) => {
-        const count = toPositiveInt(heat.participantSlots)
+        const configuredSlots = toPositiveInt(heat.participantSlots)
         const heatEntrants: EntrantSlot[] = []
-        for (let i = 0; i < count; i += 1) {
+        for (let i = 0; i < configuredSlots; i += 1) {
           heatEntrants.push({
             participant: participants[cursor + i] ?? null,
             source: null,
           })
         }
-        cursor += count
-        heatStates.push({ ...heat, entrants: heatEntrants })
+        cursor += configuredSlots
+        heatStates.push({ ...heat, entrants: heatEntrants, configuredSlots })
       })
     } else {
       const prevRound = rounds[roundIndex - 1]
@@ -495,10 +496,12 @@ export const buildTournament = (
 
       round.heats.forEach((heat, heatIndex) => {
         const heatEntrants = heatEntrantsByIndex[heatIndex]
+        const configuredSlots = toPositiveInt(heat.participantSlots)
         heatStates.push({
           ...heat,
           entrants: heatEntrants,
           participantSlots: heatEntrants.length,
+          configuredSlots,
         })
       })
     }

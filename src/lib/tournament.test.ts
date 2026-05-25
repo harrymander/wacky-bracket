@@ -56,6 +56,7 @@ const buildHeatState = (
     participantSlots: participantNames.length,
     advanceCount,
     entrants,
+    configuredSlots: participantNames.length,
   }
 }
 
