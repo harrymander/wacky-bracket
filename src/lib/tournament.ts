@@ -5,7 +5,6 @@ export type Participant = {
 
 export type HeatConfig = {
   id: string
-  label: string
   participantSlots: number
   advanceCount: number
 }
@@ -63,9 +62,8 @@ const participantFromName = (name: string): Participant => ({
   name,
 })
 
-export const createHeat = (heatIndex: number, slots: number, advance: number): HeatConfig => ({
+export const createHeat = (slots: number, advance: number): HeatConfig => ({
   id: generateId(),
-  label: `Race ${heatIndex + 1}`,
   participantSlots: toPositiveInt(slots),
   advanceCount: toPositiveInt(advance),
 })
@@ -79,22 +77,22 @@ export const DEFAULT_ROUNDS: RoundConfig[] = [
     id: generateId(),
     label: 'Round 1',
     heats: [
-      createHeat(0, 10, 5),
-      createHeat(1, 10, 5),
-      createHeat(2, 10, 5),
-      createHeat(3, 11, 6),
-      createHeat(4, 11, 6),
+      createHeat(10, 5),
+      createHeat(10, 5),
+      createHeat(10, 5),
+      createHeat(11, 6),
+      createHeat(11, 6),
     ],
   },
   {
     id: generateId(),
     label: 'Round 2',
-    heats: [createHeat(0, 9, 3), createHeat(1, 9, 3), createHeat(2, 9, 3)],
+    heats: [createHeat(9, 3), createHeat(9, 3), createHeat(9, 3)],
   },
   {
     id: generateId(),
     label: 'Final',
-    heats: [createHeat(0, 9, 1)],
+    heats: [createHeat(9, 1)],
   },
 ]
 
@@ -191,23 +189,22 @@ export const parseParticipantsFromCsv = (csvText: string): Participant[] => {
     .map((name) => participantFromName(name))
 }
 
-export const normalizeHeat = (heat: Partial<HeatConfig>, heatIndex: number): HeatConfig => {
+export const normalizeHeat = (heat: Partial<HeatConfig>): HeatConfig => {
   const participantSlots = toPositiveInt(Number(heat.participantSlots ?? 1))
   const advanceCount = Math.min(toPositiveInt(Number(heat.advanceCount ?? 1)), participantSlots)
   return {
     id: heat.id || generateId(),
-    label: heat.label || `Race ${heatIndex + 1}`,
     participantSlots,
     advanceCount,
   }
 }
 
 export const normalizeRound = (round: Partial<RoundConfig>, roundIndex: number): RoundConfig => {
-  const heatsInput = Array.isArray(round.heats) && round.heats.length > 0 ? round.heats : [createHeat(0, 2, 1)]
+  const heatsInput = Array.isArray(round.heats) && round.heats.length > 0 ? round.heats : [createHeat(2, 1)]
   return {
     id: round.id || generateId(),
     label: round.label || `Round ${roundIndex + 1}`,
-    heats: heatsInput.map((heat, heatIndex) => normalizeHeat(heat, heatIndex)),
+    heats: heatsInput.map((heat) => normalizeHeat(heat)),
   }
 }
 
@@ -380,7 +377,6 @@ export const roundsAreEqual = (a: RoundConfig[], b: RoundConfig[]): boolean => {
       const otherHeat = other.heats[j]
       return (
         heat.id === otherHeat.id &&
-        heat.label === otherHeat.label &&
         heat.participantSlots === otherHeat.participantSlots &&
         heat.advanceCount === otherHeat.advanceCount
       )

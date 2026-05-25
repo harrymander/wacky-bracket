@@ -171,7 +171,7 @@ const BracketPanelContent = ({ roundStates, results, isDisplayMode, onSetLaps }:
                 >
                   <div className="heat-header">
                     <div className="heat-title-group">
-                      {roundIndex < roundStates.length - 1 ? <h4>{heat.label}</h4> : <h4>{round.label}</h4>}
+                      {roundIndex < roundStates.length - 1 ? <h4>Race {originalHeatIndex + 1}</h4> : <h4>{round.label}</h4>}
                       {!isCollapsed && isCompleted ? <span className="completed-badge">Completed</span> : null}
                     </div>
                     <div className="heat-header-controls">

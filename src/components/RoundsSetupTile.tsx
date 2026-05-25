@@ -60,7 +60,7 @@ export const RoundsSetupTile = ({
               </p>
               {round.heats.map((heat, heatIndex) => (
                 <div key={heat.id} className="heat-config-row">
-                  <strong>{heat.label}</strong>
+                  <strong>Race {heatIndex + 1}</strong>
                   <label>
                     Participants
                     <input

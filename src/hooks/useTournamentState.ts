@@ -70,9 +70,8 @@ export const ensureFinalRoundShape = (inputRounds: RoundConfig[]): RoundConfig[]
   const existingFinal = hasExplicitFinal ? baseRounds[baseRounds.length - 1] : undefined
   const finalId = existingFinal?.id || generateId()
   const finalHeat = {
-    ...createHeat(0, finalIncomingSlots, 1),
+    ...createHeat(finalIncomingSlots, 1),
     id: existingFinal?.heats?.[0]?.id || generateId(),
-    label: 'Final',
     participantSlots: finalIncomingSlots,
     advanceCount: 1,
   }
@@ -235,7 +234,7 @@ export const useTournamentState = () => {
         }
         return {
           ...round,
-          heats: [...round.heats, createHeat(round.heats.length, 2, 1)],
+          heats: [...round.heats, createHeat(2, 1)],
         }
       }),
       ),
@@ -270,7 +269,7 @@ export const useTournamentState = () => {
         {
           id: generateId(),
           label: `Round ${prelimRounds.length + 1}`,
-          heats: [createHeat(0, incoming, 1)],
+          heats: [createHeat(incoming, 1)],
         },
       ]
       return ensureFinalRoundShape(nextRounds)
