@@ -228,12 +228,18 @@ export const validateTournament = (participants: Participant[], rounds: RoundCon
   }
 
   const seenRoundIds = new Set<string>()
+  const seenRoundLabels = new Set<string>()
   const seenHeatIds = new Set<string>()
   for (const round of rounds) {
     if (seenRoundIds.has(round.id)) {
       errors.push(`Duplicate round id: "${round.id}".`)
     }
     seenRoundIds.add(round.id)
+    const normalizedLabel = round.label.trim().toLowerCase()
+    if (seenRoundLabels.has(normalizedLabel)) {
+      errors.push(`Duplicate round name: "${round.label}".`)
+    }
+    seenRoundLabels.add(normalizedLabel)
     for (const heat of round.heats) {
       if (seenHeatIds.has(heat.id)) {
         errors.push(`Duplicate heat id: "${heat.id}".`)

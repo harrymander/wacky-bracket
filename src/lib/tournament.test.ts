@@ -438,6 +438,20 @@ describe('validateTournament', () => {
     const errors = validateTournament(passingParticipants, passingRounds)
     expect(errors.some((m) => m.includes('Duplicate participant'))).toBe(false)
   })
+
+  it('flags duplicate round labels', () => {
+    const rounds: RoundConfig[] = [
+      { id: 'r1', label: 'Round 1', heats: [createHeat(0, 0, 4, 2)] },
+      { id: 'r2', label: 'Round 1', heats: [createHeat(1, 0, 2, 1)] },
+    ]
+    const errors = validateTournament(makeParticipants(4), rounds)
+    expect(errors.some((m) => m.includes('Duplicate round name'))).toBe(true)
+  })
+
+  it('does not flag rounds with unique labels', () => {
+    const errors = validateTournament(passingParticipants, passingRounds)
+    expect(errors.some((m) => m.includes('Duplicate round name'))).toBe(false)
+  })
 })
 
 describe('evaluateHeatLaps', () => {
