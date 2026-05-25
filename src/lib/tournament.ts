@@ -220,6 +220,21 @@ export const validateTournament = (participants: Participant[], rounds: RoundCon
     return errors
   }
 
+  const seenRoundIds = new Set<string>()
+  const seenHeatIds = new Set<string>()
+  for (const round of rounds) {
+    if (seenRoundIds.has(round.id)) {
+      errors.push(`Duplicate round id: "${round.id}".`)
+    }
+    seenRoundIds.add(round.id)
+    for (const heat of round.heats) {
+      if (seenHeatIds.has(heat.id)) {
+        errors.push(`Duplicate heat id: "${heat.id}".`)
+      }
+      seenHeatIds.add(heat.id)
+    }
+  }
+
   const roundOneSlots = totalRoundSlots(rounds[0])
   if (participants.length !== roundOneSlots) {
     errors.push(`Round 1 requires exactly ${roundOneSlots} participants (currently ${participants.length}).`)

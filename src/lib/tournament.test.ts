@@ -406,6 +406,24 @@ describe('validateTournament', () => {
   it('short-circuits with only the no-rounds error when rounds is empty', () => {
     expect(validateTournament(makeParticipants(4), [])).toEqual(['Add at least one round.'])
   })
+
+  it('flags duplicate round ids', () => {
+    const rounds: RoundConfig[] = [
+      { id: 'round-1', label: 'Round 1', heats: [createHeat(0, 0, 4, 2)] },
+      { id: 'round-1', label: 'Round 2', heats: [createHeat(1, 0, 2, 1)] },
+    ]
+    const errors = validateTournament(makeParticipants(4), rounds)
+    expect(errors.some((m) => m.includes('Duplicate round id'))).toBe(true)
+  })
+
+  it('flags duplicate heat ids across rounds', () => {
+    const rounds: RoundConfig[] = [
+      { id: 'r1', label: 'Round 1', heats: [{ ...createHeat(0, 0, 4, 2), id: 'same-heat' }] },
+      { id: 'r2', label: 'Final', heats: [{ ...createHeat(1, 0, 2, 1), id: 'same-heat' }] },
+    ]
+    const errors = validateTournament(makeParticipants(4), rounds)
+    expect(errors.some((m) => m.includes('Duplicate heat id'))).toBe(true)
+  })
 })
 
 describe('evaluateHeatLaps', () => {

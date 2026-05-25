@@ -376,6 +376,11 @@ export const useTournamentState = () => {
         setStatusMessage('JSON import failed: missing participants or rounds.')
         return
       }
+      const importErrors = validateTournament(nextParticipants, nextRounds)
+      if (importErrors.length > 0) {
+        setStatusMessage(`JSON import failed: ${importErrors[0]}`)
+        return
+      }
       setPendingImport({ participants: nextParticipants, rounds: nextRounds, results: nextResults })
     } catch {
       setStatusMessage('JSON import failed: invalid JSON.')
