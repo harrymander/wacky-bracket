@@ -82,6 +82,12 @@
   letter-spacing: 0.01em;
 }
 
+.app.display-mode .advance-label {
+  color: #7c2d12;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
 .app.display-mode .next-destination {
   color: #b91c1c;
 }

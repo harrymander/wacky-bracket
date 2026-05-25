@@ -1,4 +1,6 @@
+import { renderToStaticMarkup } from 'react-dom/server'
 import { describe, expect, it } from 'vitest'
+import { BracketPanel } from './BracketPanel'
 import {
   buildTournament,
   createHeat,
@@ -140,5 +142,149 @@ describe('buildDestinationHeatMap', () => {
     const destinationMap = buildDestinationHeatMap(roundStates, 0)
 
     expect(destinationMap.get('2-1')).toBe(2)
+  })
+})
+
+describe('BracketPanel advancement label', () => {
+  const renderBracket = (rounds: RoundConfig[], results: TournamentResults = {}) =>
+    renderToStaticMarkup(
+      <BracketPanel roundStates={buildTournament(rounds, makeParticipants(2), results)} results={results} isDisplayMode={false} onSetLaps={() => undefined} />,
+    )
+
+  it('shows "Top N participants advance" when a heat is incomplete', () => {
+    const rounds: RoundConfig[] = [
+      {
+        id: 'r1',
+        label: 'Round 1',
+        heats: [createHeat(2, 2)],
+      },
+      {
+        id: 'r2',
+        label: 'Final',
+        heats: [createHeat(2, 1)],
+      },
+    ]
+
+    const markup = renderBracket(rounds)
+    expect(markup).toContain('Top 2 participants advance')
+  })
+
+  it('shows singular copy when a heat is complete', () => {
+    const rounds: RoundConfig[] = [
+      {
+        id: 'r1',
+        label: 'Round 1',
+        heats: [createHeat(2, 1)],
+      },
+      {
+        id: 'r2',
+        label: 'Final',
+        heats: [createHeat(1, 1)],
+      },
+    ]
+    const participants = makeParticipants(2)
+    const heatId = rounds[0].heats[0].id
+    const results: TournamentResults = {
+      r1: {
+        [heatId]: {
+          [participants[0].id]: '4',
+          [participants[1].id]: '3',
+        },
+      },
+    }
+
+    const markup = renderToStaticMarkup(
+      <BracketPanel
+        roundStates={buildTournament(rounds, participants, results)}
+        results={results}
+        isDisplayMode={false}
+        onSetLaps={() => undefined}
+      />,
+    )
+
+    expect(markup).toContain('1 participant to advance')
+  })
+
+  it('reflects extra advancers when a boundary tie expands the field', () => {
+    const rounds: RoundConfig[] = [
+      {
+        id: 'r1',
+        label: 'Round 1',
+        heats: [createHeat(2, 1)],
+      },
+      {
+        id: 'r2',
+        label: 'Final',
+        heats: [createHeat(2, 1)],
+      },
+    ]
+    const participants = makeParticipants(2)
+    const heatId = rounds[0].heats[0].id
+    const results: TournamentResults = {
+      r1: {
+        [heatId]: {
+          [participants[0].id]: '5',
+          [participants[1].id]: '5',
+        },
+      },
+    }
+
+    const markup = renderToStaticMarkup(
+      <BracketPanel
+        roundStates={buildTournament(rounds, participants, results)}
+        results={results}
+        isDisplayMode={false}
+        onSetLaps={() => undefined}
+      />,
+    )
+
+    expect(markup).toContain('2 participants to advance')
+  })
+
+  it('omits the advancement label for the final round', () => {
+    const rounds: RoundConfig[] = [
+      {
+        id: 'r1',
+        label: 'Final',
+        heats: [createHeat(2, 1)],
+      },
+    ]
+
+    const markup = renderToStaticMarkup(
+      <BracketPanel
+        roundStates={buildTournament(rounds, makeParticipants(2), {})}
+        results={{}}
+        isDisplayMode={false}
+        onSetLaps={() => undefined}
+      />,
+    )
+
+    expect(markup).not.toContain('participant')
+  })
+
+  it('hides the advancement label when a heat is collapsed', () => {
+    const rounds: RoundConfig[] = [
+      {
+        id: 'r1',
+        label: 'Round 1',
+        heats: [createHeat(2, 2)],
+      },
+      {
+        id: 'r2',
+        label: 'Final',
+        heats: [createHeat(2, 1)],
+      },
+    ]
+
+    const markup = renderToStaticMarkup(
+      <BracketPanel
+        roundStates={buildTournament(rounds, makeParticipants(2), {})}
+        results={{}}
+        isDisplayMode={true}
+        onSetLaps={() => undefined}
+      />,
+    )
+
+    expect(markup).not.toContain('Top 2 participants advance')
   })
 })

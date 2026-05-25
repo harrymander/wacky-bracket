@@ -139,6 +139,14 @@ const BracketPanelContent = ({ roundStates, results, isDisplayMode, onSetLaps }:
               const isExpanded = expandedHeatKey === heatKey
               const isCollapsed = !isExpanded && collapsedHeatKeys.has(heatKey)
               const isCompleted = ranking.isComplete
+              const isFinalRound = roundIndex === roundStates.length - 1
+              const labelAdvanceCount = isCompleted ? ranking.actualAdvancers.length : heat.advanceCount
+              const participantLabel = labelAdvanceCount === 1 ? 'participant' : 'participants'
+              const advanceLabel = !isFinalRound && !isCollapsed
+                ? isCompleted
+                  ? `${labelAdvanceCount} ${participantLabel} to advance`
+                  : `Top ${labelAdvanceCount} ${participantLabel} advance`
+                : null
 
               return (
                 <section
@@ -179,6 +187,7 @@ const BracketPanelContent = ({ roundStates, results, isDisplayMode, onSetLaps }:
                       />
                     </div>
                   </div>
+                  {advanceLabel ? <p className="advance-label">{advanceLabel}</p> : null}
                   {!isCollapsed ? (
                     <>
                       {isDisplayMode ? (
@@ -208,7 +217,6 @@ const BracketPanelContent = ({ roundStates, results, isDisplayMode, onSetLaps }:
                           isAdvancing && roundIndex < roundStates.length - 1 && advancingSlot > 0
                             ? destinationHeatMap.get(`${originalHeatIndex}-${advancingSlot}`)
                             : undefined
-                        const isFinalRound = roundIndex === roundStates.length - 1
                         const medalRank =
                           advancingRank >= 1 && advancingRank <= 3 && (destinationHeat !== undefined || isFinalRound)
                             ? advancingRank
