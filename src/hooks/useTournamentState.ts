@@ -290,19 +290,15 @@ export const useTournamentState = () => {
 
   const updateRoundLabel = (roundIndex: number, value: string) => {
     clearStatus()
-    setDraftRounds((previous) =>
+    const transform = (previous: RoundConfig[]) =>
       ensureFinalRoundShape(
         previous.map((round, currentRoundIndex) => {
-        if (currentRoundIndex !== roundIndex) {
-          return round
-        }
-        return {
-          ...round,
-          label: value,
-        }
-      }),
-      ),
-    )
+          if (currentRoundIndex !== roundIndex) return round
+          return { ...round, label: value }
+        }),
+      )
+    setRounds(transform)
+    setDraftRounds(transform)
   }
 
   const setLaps = (roundId: string, heatId: string, participantId: string, value: string) => {
