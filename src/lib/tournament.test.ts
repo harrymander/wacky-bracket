@@ -11,6 +11,7 @@ import {
   parseParticipantsFromCsv,
   parseParticipantsFromLines,
   roundsAreEqual,
+  shuffleLines,
   totalRoundOutgoing,
   totalRoundSlots,
   validateTournament,
@@ -1672,5 +1673,21 @@ describe('buildTournament — round status flags', () => {
     ]
     const [, finalRound] = buildTournament(rounds, makeParticipants(2), {})
     expect(finalRound.messages).toEqual([])
+  })
+})
+
+describe('shuffleLines', () => {
+  it('returns empty string for empty input', () => {
+    expect(shuffleLines('')).toBe('')
+  })
+
+  it('returns the same name for a single participant', () => {
+    expect(shuffleLines('Alice')).toBe('Alice')
+  })
+
+  it('returns the same set of names in any order', () => {
+    const input = 'Alice\nBob\nCarol\nDave\nEve'
+    const result = shuffleLines(input)
+    expect(result.split('\n').sort()).toEqual(input.split('\n').sort())
   })
 })

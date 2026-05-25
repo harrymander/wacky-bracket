@@ -9,6 +9,7 @@ import {
   parseParticipantsFromCsv,
   parseParticipantsFromLines,
   roundsAreEqual,
+  shuffleLines,
   totalRoundOutgoing,
   type RoundConfig,
   type TournamentResults,
@@ -396,6 +397,10 @@ export const useTournamentState = () => {
     setPendingImport(null)
   }
 
+  const shuffleParticipantLines = () => {
+    setParticipantLines((prev) => shuffleLines(prev))
+  }
+
   const openDisplayPopout = () => {
     const nextUrl = new URL(window.location.href)
     nextUrl.searchParams.set('view', 'display')
@@ -421,6 +426,7 @@ export const useTournamentState = () => {
     confirmResetOpen,
     confirmImportOpen: pendingImport !== null,
     setParticipantLines,
+    shuffleParticipantLines,
     toggleParticipantsOpen: () => setParticipantsOpen((value) => !value),
     toggleRoundsOpen: () => setRoundsOpen((value) => !value),
     requestApply,

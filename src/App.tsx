@@ -42,6 +42,7 @@ function App() {
             onToggleRoundsOpen={state.toggleRoundsOpen}
             onParticipantLinesChange={state.setParticipantLines}
             onImportCsvFromFile={state.importCsvFromFile}
+            onShuffleParticipants={state.shuffleParticipantLines}
             onRequestApply={state.requestApply}
             onConfirmApply={state.confirmApply}
             onRevertDrafts={state.revertDrafts}
