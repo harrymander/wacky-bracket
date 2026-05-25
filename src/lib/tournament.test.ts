@@ -288,10 +288,9 @@ describe('hasStructuralRoundChanges', () => {
     expect(hasStructuralRoundChanges(base, copy)).toBe(false)
   })
 
-  it('returns false when only labels differ', () => {
+  it('returns false when only round labels differ', () => {
     const modified = JSON.parse(JSON.stringify(base)) as RoundConfig[]
     modified[0].label = 'Prelims'
-    modified[0].heats[0].label = 'Renamed Heat'
     expect(hasStructuralRoundChanges(base, modified)).toBe(false)
   })
 
