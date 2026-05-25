@@ -353,18 +353,59 @@ export const evaluateHeatLaps = (
 }
 
 
-const sourceSlotsForRound = (round: RoundConfig, roundIndex: number): SourceSlot[] => {
+export const sourceSlotsForRound = (round: RoundConfig, roundIndex: number): SourceSlot[] => {
   const slots: SourceSlot[] = []
-  round.heats.forEach((heat, heatIndex) => {
-    for (let rank = 1; rank <= toPositiveInt(heat.advanceCount); rank += 1) {
-      slots.push({
-        fromRound: roundIndex,
-        fromHeat: heatIndex,
-        rank,
-      })
-    }
-  })
+  const advanceCounts = round.heats.map((heat) => toPositiveInt(heat.advanceCount))
+  const maxAdvance = advanceCounts.length > 0 ? Math.max(...advanceCounts) : 0
+
+  for (let rank = 1; rank <= maxAdvance; rank += 1) {
+    round.heats.forEach((_, heatIndex) => {
+      if (rank <= advanceCounts[heatIndex]) {
+        slots.push({
+          fromRound: roundIndex,
+          fromHeat: heatIndex,
+          rank,
+        })
+      }
+    })
+  }
   return slots
+}
+
+export const assignSourcesToDestinationHeats = (
+  sources: SourceSlot[],
+  destinationHeats: HeatConfig[],
+): number[] => {
+  if (destinationHeats.length === 0 || sources.length === 0) {
+    return []
+  }
+
+  const remaining = destinationHeats.map((heat) => toPositiveInt(heat.participantSlots))
+  const totalSlots = remaining.reduce((sum, count) => sum + count, 0)
+  if (totalSlots === 0) {
+    return sources.map(() => 0)
+  }
+
+  const assignments: number[] = []
+  let cursor = 0
+
+  sources.forEach(() => {
+    let guard = 0
+    while (remaining[cursor] === 0 && guard < remaining.length) {
+      cursor = (cursor + 1) % remaining.length
+      guard += 1
+    }
+    if (remaining[cursor] === 0) {
+      assignments.push(0)
+      return
+    }
+
+    assignments.push(cursor)
+    remaining[cursor] -= 1
+    cursor = (cursor + 1) % remaining.length
+  })
+
+  return assignments
 }
 
 export const roundsAreEqual = (a: RoundConfig[], b: RoundConfig[]): boolean => {
@@ -424,36 +465,36 @@ export const buildTournament = (
     } else {
       const prevRound = rounds[roundIndex - 1]
       const sources = sourceSlotsForRound(prevRound, roundIndex - 1)
+      const assignments = assignSourcesToDestinationHeats(sources, round.heats)
+      const heatEntrantsByIndex = round.heats.map((): EntrantSlot[] => [])
 
-      let sourceCursor = 0
-      round.heats.forEach((heat) => {
-        const baselineCount = toPositiveInt(heat.participantSlots)
-        const heatEntrants: EntrantSlot[] = []
-
-        for (let i = 0; i < baselineCount; i += 1) {
-          const source = sources[sourceCursor]
-          if (source) {
-            const actualFromHeat = lastRoundHeatAdvancers[source.fromHeat] || []
-            const isLastRankForSourceHeat = source.rank === prevRound.heats[source.fromHeat].advanceCount
-
-            if (isLastRankForSourceHeat) {
-              const remaining = actualFromHeat.slice(source.rank - 1)
-              if (remaining.length > 0) {
-                remaining.forEach((p) => {
-                  heatEntrants.push({ participant: p, source })
-                })
-              } else {
-                // If no one is at or after this rank yet, still provide a placeholder slot
-                heatEntrants.push({ participant: null, source })
-              }
-            } else {
-              const p = actualFromHeat[source.rank - 1]
-              heatEntrants.push({ participant: p ?? null, source })
-            }
-          }
-          sourceCursor += 1
+      sources.forEach((source, sourceIndex) => {
+        const destHeatIndex = assignments[sourceIndex]
+        if (destHeatIndex === undefined) {
+          return
         }
+        const heatEntrants = heatEntrantsByIndex[destHeatIndex]
+        const actualFromHeat = lastRoundHeatAdvancers[source.fromHeat] || []
+        const isLastRankForSourceHeat = source.rank === prevRound.heats[source.fromHeat].advanceCount
 
+        if (isLastRankForSourceHeat) {
+          const remaining = actualFromHeat.slice(source.rank - 1)
+          if (remaining.length > 0) {
+            remaining.forEach((p) => {
+              heatEntrants.push({ participant: p, source })
+            })
+          } else {
+            // If no one is at or after this rank yet, still provide a placeholder slot
+            heatEntrants.push({ participant: null, source })
+          }
+        } else {
+          const p = actualFromHeat[source.rank - 1]
+          heatEntrants.push({ participant: p ?? null, source })
+        }
+      })
+
+      round.heats.forEach((heat, heatIndex) => {
+        const heatEntrants = heatEntrantsByIndex[heatIndex]
         heatStates.push({
           ...heat,
           entrants: heatEntrants,

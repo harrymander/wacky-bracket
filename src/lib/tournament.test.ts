@@ -638,8 +638,8 @@ describe('buildTournament — source slot propagation', () => {
     expect(finalHeat.entrants).toHaveLength(4)
     expect(finalHeat.entrants.map((entrant) => entrant.source)).toEqual([
       { fromRound: 0, fromHeat: 0, rank: 1 },
-      { fromRound: 0, fromHeat: 0, rank: 2 },
       { fromRound: 0, fromHeat: 1, rank: 1 },
+      { fromRound: 0, fromHeat: 0, rank: 2 },
       { fromRound: 0, fromHeat: 1, rank: 2 },
     ])
     finalHeat.entrants.forEach((entrant) => expect(entrant.participant).toBeNull())
@@ -668,14 +668,14 @@ describe('buildTournament — source slot propagation', () => {
 
     expect(roundTwo.heats[0].entrants.map((entrant) => entrant.source)).toEqual([
       { fromRound: 0, fromHeat: 0, rank: 1 },
+      { fromRound: 0, fromHeat: 2, rank: 1 },
       { fromRound: 0, fromHeat: 0, rank: 2 },
-      { fromRound: 0, fromHeat: 1, rank: 1 },
-      { fromRound: 0, fromHeat: 1, rank: 2 },
+      { fromRound: 0, fromHeat: 2, rank: 2 },
     ])
     expect(roundTwo.heats[1].entrants.map((entrant) => entrant.source)).toEqual([
-      { fromRound: 0, fromHeat: 2, rank: 1 },
-      { fromRound: 0, fromHeat: 2, rank: 2 },
+      { fromRound: 0, fromHeat: 1, rank: 1 },
       { fromRound: 0, fromHeat: 3, rank: 1 },
+      { fromRound: 0, fromHeat: 1, rank: 2 },
       { fromRound: 0, fromHeat: 3, rank: 2 },
     ])
   })
@@ -705,7 +705,7 @@ describe('buildTournament — source slot propagation', () => {
       },
     }
     const [, finalRound] = buildTournament(rounds, participants, results)
-    expect(namesOf(finalRound.heats[0].entrants.map((e) => e.participant))).toEqual(['P1', 'P2', 'P4', 'P5'])
+    expect(namesOf(finalRound.heats[0].entrants.map((e) => e.participant))).toEqual(['P1', 'P4', 'P2', 'P5'])
   })
 
   it('seeds completed heats and leaves incomplete heats as null when the prior round is partially complete', () => {
@@ -732,14 +732,14 @@ describe('buildTournament — source slot propagation', () => {
     expect(roundOne.canAdvance).toBe(false)
     expect(namesOf(finalRound.heats[0].entrants.map((e) => e.participant))).toEqual([
       'P1',
-      'P2',
       null,
+      'P2',
       null,
     ])
     expect(finalRound.heats[0].entrants.map((e) => e.source)).toEqual([
       { fromRound: 0, fromHeat: 0, rank: 1 },
-      { fromRound: 0, fromHeat: 0, rank: 2 },
       { fromRound: 0, fromHeat: 1, rank: 1 },
+      { fromRound: 0, fromHeat: 0, rank: 2 },
       { fromRound: 0, fromHeat: 1, rank: 2 },
     ])
   })
@@ -813,9 +813,9 @@ describe('buildTournament — source slot propagation', () => {
     expect(roundOne.messages).toContain('Extra participants will advance due to tie.')
     expect(namesOf(finalRound.heats[0].entrants.map((e) => e.participant))).toEqual([
       'P1',
+      'P5',
       'P2',
       'P3',
-      'P5',
       'P6',
     ])
   })
@@ -874,7 +874,7 @@ describe('buildTournament — source slot propagation', () => {
       },
     }
     const [, roundTwo, finalRound] = buildTournament(rounds, participants, results)
-    expect(namesOf(roundTwo.heats[0].entrants.map((e) => e.participant))).toEqual(['P1', 'P2', 'P5', 'P6'])
+    expect(namesOf(roundTwo.heats[0].entrants.map((e) => e.participant))).toEqual(['P1', 'P5', 'P2', 'P6'])
     expect(namesOf(finalRound.heats[0].entrants.map((e) => e.participant))).toEqual(['P1', 'P2'])
     expect(finalRound.heats[0].entrants.map((e) => e.source)).toEqual([
       { fromRound: 1, fromHeat: 0, rank: 1 },
@@ -1645,9 +1645,9 @@ describe('buildTournament — structural invariants', () => {
     expect(namesOf(roundTwo.heats[0].entrants.map((e) => e.participant))).toEqual([
       'P1',
       'P2',
-      'P4',
+      'P5',
     ])
-    expect(namesOf(roundTwo.heats[1].entrants.map((e) => e.participant))).toEqual(['P5'])
+    expect(namesOf(roundTwo.heats[1].entrants.map((e) => e.participant))).toEqual(['P4'])
   })
 })
 

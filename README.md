@@ -39,6 +39,15 @@ npm run preview
    `participantSlots`.
 4. The final round is derived from prior-round qualifiers and is always one heat.
 
+## Round transition scheme
+
+Qualifiers are seeded into the next round using an interleaved, rank-major
+ordering to mix heats. Source slots are ordered by rank across heats (all 1st
+place finishers, then all 2nd place finishers, and so on), then assigned
+round-robin across destination heats (skipping heats once they reach their
+configured slot counts). This ensures each destination heat contains a mix of
+high and low qualifiers instead of stacking top finishers together.
+
 Tournament configuration and results are persisted in `localStorage`. They can
 be exported/imported via JSON.
 

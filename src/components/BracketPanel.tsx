@@ -1,5 +1,11 @@
 import { useState } from 'react'
-import { evaluateHeatLaps, type RoundState, type TournamentResults } from '../lib/tournament'
+import {
+  assignSourcesToDestinationHeats,
+  evaluateHeatLaps,
+  sourceSlotsForRound,
+  type RoundState,
+  type TournamentResults,
+} from '../lib/tournament'
 
 type BracketPanelProps = {
   roundStates: RoundState[]
@@ -17,21 +23,12 @@ const buildDestinationHeatMap = (roundStates: RoundState[], roundIndex: number) 
   const currentRound = roundStates[roundIndex]
   const nextRound = roundStates[roundIndex + 1]
 
-  const destinationHeatSlots: number[] = []
-  nextRound.heats.forEach((heat, nextHeatIndex) => {
-    for (let i = 0; i < heat.participantSlots; i += 1) {
-      destinationHeatSlots.push(nextHeatIndex + 1)
-    }
-  })
-
-  let cursor = 0
-  currentRound.heats.forEach((heat, heatIndex) => {
-    for (let rank = 1; rank <= heat.advanceCount; rank += 1) {
-      const destinationHeat = destinationHeatSlots[cursor]
-      if (destinationHeat !== undefined) {
-        map.set(`${heatIndex}-${rank}`, destinationHeat)
-      }
-      cursor += 1
+  const sources = sourceSlotsForRound(currentRound, roundIndex)
+  const assignments = assignSourcesToDestinationHeats(sources, nextRound.heats)
+  sources.forEach((source, index) => {
+    const destinationHeatIndex = assignments[index]
+    if (destinationHeatIndex !== undefined) {
+      map.set(`${source.fromHeat}-${source.rank}`, destinationHeatIndex + 1)
     }
   })
 
