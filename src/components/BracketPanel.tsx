@@ -128,7 +128,7 @@ const BracketPanelContent = ({ roundStates, results, isDisplayMode, onSetLaps }:
                 />
               ) : null}
               {!expandedHeatKey && roundIndex < roundStates.length - 1 ? (
-                <p>{visibleHeats.length} heat{visibleHeats.length === 1 ? '' : 's'}</p>
+                <p>{visibleHeats.length} race{visibleHeats.length === 1 ? '' : 's'}</p>
               ) : null}
             </header>
 
@@ -179,8 +179,8 @@ const BracketPanelContent = ({ roundStates, results, isDisplayMode, onSetLaps }:
                         <button
                           type="button"
                           className={`ghost heat-collapse-button ${isCollapsed ? 'expand' : 'collapse'}`}
-                          aria-label={isCollapsed ? 'Expand heat' : 'Collapse heat'}
-                          title={isCollapsed ? 'Expand heat' : 'Collapse heat'}
+                          aria-label={isCollapsed ? 'Expand race' : 'Collapse race'}
+                          title={isCollapsed ? 'Expand race' : 'Collapse race'}
                           onClick={() =>
                             setCollapsedHeatKeys((current) => {
                               const next = new Set(current)
@@ -197,8 +197,8 @@ const BracketPanelContent = ({ roundStates, results, isDisplayMode, onSetLaps }:
                       <button
                         type="button"
                         className={`ghost heat-focus-button ${isExpanded ? 'compress' : 'expand'}`}
-                        aria-label={isExpanded ? 'Minimise heat' : 'Maximise heat'}
-                        title={isExpanded ? 'Minimise heat' : 'Maximise heat'}
+                        aria-label={isExpanded ? 'Minimise race' : 'Maximise race'}
+                        title={isExpanded ? 'Minimise race' : 'Maximise race'}
                         onClick={() => setExpandedHeatKey(isExpanded ? null : heatKey)}
                       />
                     </div>
@@ -214,7 +214,7 @@ const BracketPanelContent = ({ roundStates, results, isDisplayMode, onSetLaps }:
                       {orderedEntrants.map((entrant, entrantIndex) => {
                         const participant = entrant.participant
                         const placeholder = entrant.source
-                          ? `R${entrant.source.fromRound + 1} H${entrant.source.fromHeat + 1} #${entrant.source.rank}`
+                          ? `R${entrant.source.fromRound + 1}.${entrant.source.fromHeat + 1} #${entrant.source.rank}`
                           : 'Unassigned'
                         const currentValue =
                           participant && results?.[round.id]?.[heat.id]?.[participant.id]
@@ -259,7 +259,7 @@ const BracketPanelContent = ({ roundStates, results, isDisplayMode, onSetLaps }:
                               <span>{participant ? participant.name : placeholder}</span>
                               {destinationHeat ? (
                                 <span className="next-destination">
-                                  {roundIndex + 1 === roundStates.length - 1 ? `→ F` : `→ R${roundIndex + 2} H${destinationHeat}`}
+                                  {roundIndex + 1 === roundStates.length - 1 ? `→ F` : `→ R${roundIndex + 2}.${destinationHeat}`}
                                 </span>
                               ) : null}
                             </span>

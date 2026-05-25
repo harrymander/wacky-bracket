@@ -84,14 +84,14 @@ export const RoundsSetupTile = ({
                   </label>
                   {round.heats.length > 1 ? (
                     <button type="button" className="ghost" onClick={() => onRemoveHeat(roundIndex, heatIndex)}>
-                      Remove heat
+                      Remove race
                     </button>
                   ) : null}
                 </div>
               ))}
               <div className="io-row">
                 <button type="button" onClick={() => onAddHeat(roundIndex)}>
-                  Add heat
+                  Add race
                 </button>
               </div>
             </article>

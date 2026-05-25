@@ -167,7 +167,7 @@ describe('createHeat', () => {
   it('produces a UUID id and label derived from the heat index', () => {
     const heat = createHeat(1, 8, 4)
     expect(heat.id).toMatch(UUID_RE)
-    expect(heat.label).toBe('Heat 2')
+    expect(heat.label).toBe('Race 2')
     expect(heat.participantSlots).toBe(8)
     expect(heat.advanceCount).toBe(4)
   })
@@ -183,7 +183,7 @@ describe('normalizeHeat', () => {
   it('fills defaults when fields are missing', () => {
     const heat = normalizeHeat({}, 0)
     expect(heat.id).toMatch(UUID_RE)
-    expect(heat.label).toBe('Heat 1')
+    expect(heat.label).toBe('Race 1')
     expect(heat.participantSlots).toBe(1)
     expect(heat.advanceCount).toBe(1)
   })
@@ -401,7 +401,7 @@ describe('validateTournament', () => {
     ]
     expect(validateTournament(makeParticipants(3), rounds)).toEqual([
       'Round 1 requires exactly 4 participants (currently 3).',
-      'Round 1, Heat 1: advancing count cannot exceed participant slots.',
+      'Round 1, Race 1: advancing count cannot exceed participant slots.',
       'Round 1 outputs 10 qualifiers, but Round 2 expects 5 entrants.',
     ])
   })

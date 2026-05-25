@@ -65,7 +65,7 @@ const participantFromName = (name: string): Participant => ({
 
 export const createHeat = (heatIndex: number, slots: number, advance: number): HeatConfig => ({
   id: generateId(),
-  label: `Heat ${heatIndex + 1}`,
+  label: `Race ${heatIndex + 1}`,
   participantSlots: toPositiveInt(slots),
   advanceCount: toPositiveInt(advance),
 })
@@ -196,7 +196,7 @@ export const normalizeHeat = (heat: Partial<HeatConfig>, heatIndex: number): Hea
   const advanceCount = Math.min(toPositiveInt(Number(heat.advanceCount ?? 1)), participantSlots)
   return {
     id: heat.id || generateId(),
-    label: heat.label || `Heat ${heatIndex + 1}`,
+    label: heat.label || `Race ${heatIndex + 1}`,
     participantSlots,
     advanceCount,
   }
@@ -257,7 +257,7 @@ export const validateTournament = (participants: Participant[], rounds: RoundCon
   rounds.forEach((round, roundIndex) => {
     round.heats.forEach((heat, heatIndex) => {
       if (heat.advanceCount > heat.participantSlots) {
-        errors.push(`Round ${roundIndex + 1}, Heat ${heatIndex + 1}: advancing count cannot exceed participant slots.`)
+        errors.push(`Round ${roundIndex + 1}, Race ${heatIndex + 1}: advancing count cannot exceed participant slots.`)
       }
     })
 
