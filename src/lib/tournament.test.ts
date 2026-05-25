@@ -424,6 +424,20 @@ describe('validateTournament', () => {
     const errors = validateTournament(makeParticipants(4), rounds)
     expect(errors.some((m) => m.includes('Duplicate heat id'))).toBe(true)
   })
+
+  it('flags duplicate participant names', () => {
+    const participants = parseParticipantsFromLines('Alice\nBob\nAlice\nCharlie')
+    const rounds: RoundConfig[] = [
+      { id: 'r1', label: 'Final', heats: [createHeat(0, 0, 4, 1)] },
+    ]
+    const errors = validateTournament(participants, rounds)
+    expect(errors.some((m) => m.includes('Duplicate participant'))).toBe(true)
+  })
+
+  it('does not flag participants with unique names', () => {
+    const errors = validateTournament(passingParticipants, passingRounds)
+    expect(errors.some((m) => m.includes('Duplicate participant'))).toBe(false)
+  })
 })
 
 describe('evaluateHeatLaps', () => {

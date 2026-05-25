@@ -215,6 +215,13 @@ export const validateTournament = (participants: Participant[], rounds: RoundCon
   if (participants.length === 0) {
     errors.push('Add at least one participant.')
   }
+  const seenNames = new Set<string>()
+  for (const participant of participants) {
+    if (seenNames.has(participant.name)) {
+      errors.push(`Duplicate participant: "${participant.name}".`)
+    }
+    seenNames.add(participant.name)
+  }
   if (rounds.length === 0) {
     errors.push('Add at least one round.')
     return errors
