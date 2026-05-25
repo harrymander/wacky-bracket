@@ -17,6 +17,7 @@ import {
   totalRoundSlots,
   validateTournament,
 } from './tournament'
+import { ensureFinalRoundShape } from '../hooks/useTournamentState'
 import type {
   HeatState,
   Participant,
@@ -1688,6 +1689,42 @@ describe('sortLines', () => {
 
   it('sorts names alphabetically', () => {
     expect(sortLines('Dave\nAlice\nCarol\nBob')).toBe('Alice\nBob\nCarol\nDave')
+  })
+})
+
+describe('ensureFinalRoundShape', () => {
+  it('does not produce duplicate round ids after removing and re-adding a round', () => {
+    // Simulate: start with [Round 1, Round 2, Final(round-3)],
+    // remove a round → [Round 1, Final(round-2)],
+    // then addRound strips the final and creates Round 2 with id "round-2",
+    // passing [Round 1, Round 2(round-2)] to ensureFinalRoundShape.
+    // The Final round must NOT reuse "round-2".
+    const input: RoundConfig[] = [
+      { id: 'round-1', label: 'Round 1', heats: [createHeat(0, 0, 10, 5)] },
+      { id: 'round-2', label: 'Round 2', heats: [createHeat(1, 0, 5, 1)] },
+    ]
+    const result = ensureFinalRoundShape(input)
+    const ids = result.map((r) => r.id)
+    expect(new Set(ids).size).toBe(ids.length)
+  })
+
+  it('preserves the existing final round id when the last round is labeled Final', () => {
+    const input: RoundConfig[] = [
+      { id: 'round-1', label: 'Round 1', heats: [createHeat(0, 0, 10, 5)] },
+      { id: 'round-2', label: 'Final', heats: [createHeat(1, 0, 5, 1)] },
+    ]
+    const result = ensureFinalRoundShape(input)
+    expect(result[result.length - 1].id).toBe('round-2')
+  })
+
+  it('generates a correct final id for a single-round input', () => {
+    const input: RoundConfig[] = [
+      { id: 'round-1', label: 'Round 1', heats: [createHeat(0, 0, 10, 5)] },
+    ]
+    const result = ensureFinalRoundShape(input)
+    expect(result).toHaveLength(2)
+    expect(result[1].id).toBe('round-2')
+    expect(result[1].label).toBe('Final')
   })
 })
 

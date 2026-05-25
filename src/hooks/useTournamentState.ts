@@ -58,7 +58,7 @@ const getStoredState = (): StoredState => {
   }
 }
 
-const ensureFinalRoundShape = (inputRounds: RoundConfig[]): RoundConfig[] => {
+export const ensureFinalRoundShape = (inputRounds: RoundConfig[]): RoundConfig[] => {
   const baseRounds = inputRounds.length > 0 ? inputRounds : DEFAULT_ROUNDS
   const hasExplicitFinal =
     baseRounds.length > 1 && (baseRounds[baseRounds.length - 1].label || '').trim().toLowerCase() === 'final'
@@ -66,7 +66,7 @@ const ensureFinalRoundShape = (inputRounds: RoundConfig[]): RoundConfig[] => {
   const safePrelimRounds = prelimRounds.length > 0 ? prelimRounds : [DEFAULT_ROUNDS[0]]
   const lastPrelimRound = safePrelimRounds[safePrelimRounds.length - 1]
   const finalIncomingSlots = Math.max(1, totalRoundOutgoing(lastPrelimRound))
-  const existingFinal = baseRounds.length > 1 ? baseRounds[baseRounds.length - 1] : undefined
+  const existingFinal = hasExplicitFinal ? baseRounds[baseRounds.length - 1] : undefined
   const finalId = existingFinal?.id || `round-${safePrelimRounds.length + 1}`
   const finalHeat = {
     ...createHeat(safePrelimRounds.length, 0, finalIncomingSlots, 1),
