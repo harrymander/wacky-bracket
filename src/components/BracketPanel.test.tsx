@@ -151,7 +151,7 @@ describe('BracketPanel advancement label', () => {
       <BracketPanel roundStates={buildTournament(rounds, makeParticipants(2), results)} results={results} isDisplayMode={false} onSetLaps={() => undefined} />,
     )
 
-  it('shows "Top N participants advance" when a heat is incomplete', () => {
+  it('shows "Top N racers advance" when a heat is incomplete', () => {
     const rounds: RoundConfig[] = [
       {
         id: 'r1',
@@ -166,7 +166,7 @@ describe('BracketPanel advancement label', () => {
     ]
 
     const markup = renderBracket(rounds)
-    expect(markup).toContain('Top 2 participants advance')
+    expect(markup).toContain('Top 2 racers advance')
   })
 
   it('shows singular copy when a heat is complete', () => {
@@ -202,7 +202,7 @@ describe('BracketPanel advancement label', () => {
       />,
     )
 
-    expect(markup).toContain('1 participant to advance')
+    expect(markup).toContain('1 racer to advance')
   })
 
   it('reflects extra advancers when a boundary tie expands the field', () => {
@@ -238,7 +238,7 @@ describe('BracketPanel advancement label', () => {
       />,
     )
 
-    expect(markup).toContain('2 participants to advance')
+    expect(markup).toContain('2 racers to advance')
   })
 
   it('omits the advancement label for the final round', () => {
@@ -259,7 +259,7 @@ describe('BracketPanel advancement label', () => {
       />,
     )
 
-    expect(markup).not.toContain('participant')
+    expect(markup).not.toContain('racer')
   })
 
   it('hides the advancement label when a heat is collapsed', () => {
@@ -285,6 +285,6 @@ describe('BracketPanel advancement label', () => {
       />,
     )
 
-    expect(markup).not.toContain('Top 2 participants advance')
+    expect(markup).not.toContain('Top 2 racers advance')
   })
 })

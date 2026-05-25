@@ -141,7 +141,7 @@ const BracketPanelContent = ({ roundStates, results, isDisplayMode, onSetLaps }:
               const isCompleted = ranking.isComplete
               const isFinalRound = roundIndex === roundStates.length - 1
               const labelAdvanceCount = isCompleted ? ranking.actualAdvancers.length : heat.advanceCount
-              const participantLabel = labelAdvanceCount === 1 ? 'participant' : 'participants'
+              const participantLabel = 'racer' + (labelAdvanceCount === 1 ? '' : 's')
               const advanceLabel = !isFinalRound && !isCollapsed
                 ? isCompleted
                   ? `${labelAdvanceCount} ${participantLabel} to advance`
