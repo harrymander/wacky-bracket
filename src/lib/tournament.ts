@@ -110,6 +110,13 @@ export const parseParticipantsFromLines = (text: string): Participant[] =>
     .filter(Boolean)
     .map(participantFromName)
 
+export const sortLines = (text: string): string =>
+  text
+    .split(/\r?\n/)
+    .filter(Boolean)
+    .sort((a, b) => a.localeCompare(b))
+    .join('\n')
+
 export const shuffleLines = (text: string): string => {
   const lines = text.split(/\r?\n/).filter(Boolean)
   for (let i = lines.length - 1; i > 0; i -= 1) {

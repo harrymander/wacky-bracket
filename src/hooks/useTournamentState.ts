@@ -10,6 +10,7 @@ import {
   parseParticipantsFromLines,
   roundsAreEqual,
   shuffleLines,
+  sortLines,
   totalRoundOutgoing,
   type RoundConfig,
   type TournamentResults,
@@ -401,6 +402,10 @@ export const useTournamentState = () => {
     setParticipantLines((prev) => shuffleLines(prev))
   }
 
+  const sortParticipantLines = () => {
+    setParticipantLines((prev) => sortLines(prev))
+  }
+
   const openDisplayPopout = () => {
     const nextUrl = new URL(window.location.href)
     nextUrl.searchParams.set('view', 'display')
@@ -427,6 +432,7 @@ export const useTournamentState = () => {
     confirmImportOpen: pendingImport !== null,
     setParticipantLines,
     shuffleParticipantLines,
+    sortParticipantLines,
     toggleParticipantsOpen: () => setParticipantsOpen((value) => !value),
     toggleRoundsOpen: () => setRoundsOpen((value) => !value),
     requestApply,

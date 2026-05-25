@@ -7,6 +7,7 @@ type ParticipantsSetupTileProps = {
   onParticipantLinesChange: (value: string) => void
   onImportCsvFromFile: (file: File | undefined) => Promise<void>
   onShuffleParticipants: () => void
+  onSortParticipants: () => void
 }
 
 export const ParticipantsSetupTile = ({
@@ -16,6 +17,7 @@ export const ParticipantsSetupTile = ({
   onParticipantLinesChange,
   onImportCsvFromFile,
   onShuffleParticipants,
+  onSortParticipants,
 }: ParticipantsSetupTileProps) => {
   const handleImportCsv = async (event: ChangeEvent<HTMLInputElement>) => {
     await onImportCsvFromFile(event.target.files?.[0])
@@ -47,6 +49,9 @@ export const ParticipantsSetupTile = ({
               Import participants CSV
               <input name="import-participants-csv" type="file" accept=".csv,text/csv" onChange={handleImportCsv} />
             </label>
+            <button type="button" className="ghost" onClick={onSortParticipants}>
+              Sort
+            </button>
             <button type="button" className="ghost" onClick={onShuffleParticipants}>
               Shuffle
             </button>

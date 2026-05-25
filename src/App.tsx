@@ -43,6 +43,7 @@ function App() {
             onParticipantLinesChange={state.setParticipantLines}
             onImportCsvFromFile={state.importCsvFromFile}
             onShuffleParticipants={state.shuffleParticipantLines}
+            onSortParticipants={state.sortParticipantLines}
             onRequestApply={state.requestApply}
             onConfirmApply={state.confirmApply}
             onRevertDrafts={state.revertDrafts}

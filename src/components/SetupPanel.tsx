@@ -27,6 +27,7 @@ type SetupPanelProps = {
   onParticipantLinesChange: (value: string) => void
   onImportCsvFromFile: (file: File | undefined) => Promise<void>
   onShuffleParticipants: () => void
+  onSortParticipants: () => void
   onRequestApply: () => void
   onConfirmApply: () => void
   onRevertDrafts: () => void
@@ -67,6 +68,7 @@ export const SetupPanel = ({
   onParticipantLinesChange,
   onImportCsvFromFile,
   onShuffleParticipants,
+  onSortParticipants,
   onRequestApply,
   onConfirmApply,
   onRevertDrafts,
@@ -106,6 +108,7 @@ export const SetupPanel = ({
         onParticipantLinesChange={onParticipantLinesChange}
         onImportCsvFromFile={onImportCsvFromFile}
         onShuffleParticipants={onShuffleParticipants}
+        onSortParticipants={onSortParticipants}
       />
 
       <RoundsSetupTile

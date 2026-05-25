@@ -12,6 +12,7 @@ import {
   parseParticipantsFromLines,
   roundsAreEqual,
   shuffleLines,
+  sortLines,
   totalRoundOutgoing,
   totalRoundSlots,
   validateTournament,
@@ -1673,6 +1674,20 @@ describe('buildTournament — round status flags', () => {
     ]
     const [, finalRound] = buildTournament(rounds, makeParticipants(2), {})
     expect(finalRound.messages).toEqual([])
+  })
+})
+
+describe('sortLines', () => {
+  it('returns empty string for empty input', () => {
+    expect(sortLines('')).toBe('')
+  })
+
+  it('returns the same name for a single participant', () => {
+    expect(sortLines('Alice')).toBe('Alice')
+  })
+
+  it('sorts names alphabetically', () => {
+    expect(sortLines('Dave\nAlice\nCarol\nBob')).toBe('Alice\nBob\nCarol\nDave')
   })
 })
 
