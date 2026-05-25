@@ -120,8 +120,8 @@ export const sortLines = (text: string): string =>
 export const shuffleLines = (text: string): string => {
   const lines = text.split(/\r?\n/).filter(Boolean)
   for (let i = lines.length - 1; i > 0; i -= 1) {
-    const j = Math.floor(Math.random() * (i + 1))
-    ;[lines[i], lines[j]] = [lines[j], lines[i]]
+    const j = Math.floor(Math.random() * (i + 1));
+    [lines[i], lines[j]] = [lines[j], lines[i]]
   }
   return lines.join('\n')
 }

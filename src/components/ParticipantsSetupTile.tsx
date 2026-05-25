@@ -49,10 +49,10 @@ export const ParticipantsSetupTile = ({
               Import participants CSV
               <input name="import-participants-csv" type="file" accept=".csv,text/csv" onChange={handleImportCsv} />
             </label>
-            <button type="button" className="ghost" onClick={onSortParticipants}>
+            <button type="button" className="ghost icon-sort" onClick={onSortParticipants}>
               Sort
             </button>
-            <button type="button" className="ghost" onClick={onShuffleParticipants}>
+            <button type="button" className="ghost icon-shuffle" onClick={onShuffleParticipants}>
               Shuffle
             </button>
           </div>
