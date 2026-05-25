@@ -376,7 +376,7 @@ export const sourceSlotsForRound = (round: RoundConfig, roundIndex: number): Sou
 export const assignSourcesToDestinationHeats = (
   sources: SourceSlot[],
   destinationHeats: HeatConfig[],
-): number[] => {
+): (number | undefined)[] => {
   if (destinationHeats.length === 0 || sources.length === 0) {
     return []
   }
@@ -384,10 +384,10 @@ export const assignSourcesToDestinationHeats = (
   const remaining = destinationHeats.map((heat) => toPositiveInt(heat.participantSlots))
   const totalSlots = remaining.reduce((sum, count) => sum + count, 0)
   if (totalSlots === 0) {
-    return sources.map(() => 0)
+    return sources.map(() => undefined)
   }
 
-  const assignments: number[] = []
+  const assignments: (number | undefined)[] = []
   let cursor = 0
 
   sources.forEach(() => {
@@ -397,7 +397,7 @@ export const assignSourcesToDestinationHeats = (
       guard += 1
     }
     if (remaining[cursor] === 0) {
-      assignments.push(0)
+      assignments.push(undefined)
       return
     }
 

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
+  assignSourcesToDestinationHeats,
   buildTournament,
   createHeat,
   DEFAULT_PARTICIPANTS,
@@ -14,6 +15,7 @@ import {
   roundsAreEqual,
   shuffleLines,
   sortLines,
+  type SourceSlot,
   totalRoundOutgoing,
   totalRoundSlots,
   validateTournament,
@@ -1811,5 +1813,33 @@ describe('shuffleLines', () => {
     const input = 'Alice\nBob\nCarol\nDave\nEve'
     const result = shuffleLines(input)
     expect(result.split('\n').sort()).toEqual(input.split('\n').sort())
+  })
+})
+
+describe('assignSourcesToDestinationHeats', () => {
+  const makeSource = (fromHeat: number, rank: number): SourceSlot => ({
+    fromRound: 0,
+    fromHeat,
+    rank,
+  })
+
+  it('returns undefined for sources that exceed total destination slots', () => {
+    const sources = [makeSource(0, 1), makeSource(1, 1), makeSource(2, 1)]
+    const destinations = [createHeat(1, 1), createHeat(1, 1)]
+    const assignments = assignSourcesToDestinationHeats(sources, destinations)
+    expect(assignments[0]).toBe(0)
+    expect(assignments[1]).toBe(1)
+    expect(assignments[2]).toBeUndefined()
+  })
+
+  it('returns empty array when sources are empty', () => {
+    const assignments = assignSourcesToDestinationHeats([], [createHeat(2, 1)])
+    expect(assignments).toEqual([])
+  })
+
+  it('returns empty array when destinations are empty', () => {
+    const sources = [makeSource(0, 1)]
+    const assignments = assignSourcesToDestinationHeats(sources, [])
+    expect(assignments).toEqual([])
   })
 })
