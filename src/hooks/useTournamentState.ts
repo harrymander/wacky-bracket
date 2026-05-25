@@ -4,6 +4,7 @@ import {
   DEFAULT_ROUNDS,
   buildTournament,
   createHeat,
+  generateId,
   hasStructuralRoundChanges,
   normalizeRound,
   parseParticipantsFromCsv,
@@ -67,10 +68,10 @@ export const ensureFinalRoundShape = (inputRounds: RoundConfig[]): RoundConfig[]
   const lastPrelimRound = safePrelimRounds[safePrelimRounds.length - 1]
   const finalIncomingSlots = Math.max(1, totalRoundOutgoing(lastPrelimRound))
   const existingFinal = hasExplicitFinal ? baseRounds[baseRounds.length - 1] : undefined
-  const finalId = existingFinal?.id || `round-${safePrelimRounds.length + 1}`
+  const finalId = existingFinal?.id || generateId()
   const finalHeat = {
-    ...createHeat(safePrelimRounds.length, 0, finalIncomingSlots, 1),
-    id: `${finalId}-heat-1`,
+    ...createHeat(0, finalIncomingSlots, 1),
+    id: generateId(),
     label: 'Final',
     participantSlots: finalIncomingSlots,
     advanceCount: 1,
@@ -234,7 +235,7 @@ export const useTournamentState = () => {
         }
         return {
           ...round,
-          heats: [...round.heats, createHeat(roundIndex, round.heats.length, 2, 1)],
+          heats: [...round.heats, createHeat(round.heats.length, 2, 1)],
         }
       }),
       ),
@@ -267,9 +268,9 @@ export const useTournamentState = () => {
       const nextRounds = [
         ...prelimRounds,
         {
-          id: `round-${prelimRounds.length + 1}`,
+          id: generateId(),
           label: `Round ${prelimRounds.length + 1}`,
-          heats: [createHeat(prelimRounds.length, 0, incoming, 1)],
+          heats: [createHeat(0, incoming, 1)],
         },
       ]
       return ensureFinalRoundShape(nextRounds)

@@ -49,51 +49,52 @@ const toPositiveInt = (value: number, fallback = MIN_VALUE): number => {
   return Math.floor(value)
 }
 
-const slugify = (name: string): string => {
-  const slug = name
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/(^-|-$)/g, '')
-  return slug || 'seed'
+export const generateId = (): string => {
+  if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+    return crypto.randomUUID()
+  }
+  const hex = '0123456789abcdef'
+  const s = (n: number) => Array.from({ length: n }, () => hex[Math.floor(Math.random() * 16)]).join('')
+  return `${s(8)}-${s(4)}-4${s(3)}-${hex[8 + Math.floor(Math.random() * 4)]}${s(3)}-${s(12)}`
 }
 
-const participantFromName = (name: string, index: number): Participant => ({
-  id: `p-${index + 1}-${slugify(name)}`,
+const participantFromName = (name: string): Participant => ({
+  id: generateId(),
   name,
 })
 
-export const createHeat = (roundIndex: number, heatIndex: number, slots: number, advance: number): HeatConfig => ({
-  id: `round-${roundIndex + 1}-heat-${heatIndex + 1}`,
+export const createHeat = (heatIndex: number, slots: number, advance: number): HeatConfig => ({
+  id: generateId(),
   label: `Heat ${heatIndex + 1}`,
   participantSlots: toPositiveInt(slots),
   advanceCount: toPositiveInt(advance),
 })
 
 export const DEFAULT_PARTICIPANTS: Participant[] = Array.from({ length: 52 }, (_, index) => `Group ${index + 1}`).map(
-  participantFromName,
+  (name) => participantFromName(name),
 )
 
 export const DEFAULT_ROUNDS: RoundConfig[] = [
   {
-    id: 'round-1',
+    id: generateId(),
     label: 'Round 1',
     heats: [
-      createHeat(0, 0, 10, 5),
-      createHeat(0, 1, 10, 5),
-      createHeat(0, 2, 10, 5),
-      createHeat(0, 3, 11, 6),
-      createHeat(0, 4, 11, 6),
+      createHeat(0, 10, 5),
+      createHeat(1, 10, 5),
+      createHeat(2, 10, 5),
+      createHeat(3, 11, 6),
+      createHeat(4, 11, 6),
     ],
   },
   {
-    id: 'round-2',
+    id: generateId(),
     label: 'Round 2',
-    heats: [createHeat(1, 0, 9, 3), createHeat(1, 1, 9, 3), createHeat(1, 2, 9, 3)],
+    heats: [createHeat(0, 9, 3), createHeat(1, 9, 3), createHeat(2, 9, 3)],
   },
   {
-    id: 'round-3',
+    id: generateId(),
     label: 'Final',
-    heats: [createHeat(2, 0, 9, 1)],
+    heats: [createHeat(0, 9, 1)],
   },
 ]
 
@@ -108,7 +109,7 @@ export const parseParticipantsFromLines = (text: string): Participant[] =>
     .split(/\r?\n/)
     .map((line) => line.trim())
     .filter(Boolean)
-    .map(participantFromName)
+    .map((name) => participantFromName(name))
 
 export const sortLines = (text: string): string =>
   text
@@ -187,14 +188,14 @@ export const parseParticipantsFromCsv = (csvText: string): Participant[] => {
     .slice(start)
     .map((row) => (row[sourceColumn] || '').trim())
     .filter(Boolean)
-    .map(participantFromName)
+    .map((name) => participantFromName(name))
 }
 
-export const normalizeHeat = (heat: Partial<HeatConfig>, roundIndex: number, heatIndex: number): HeatConfig => {
+export const normalizeHeat = (heat: Partial<HeatConfig>, heatIndex: number): HeatConfig => {
   const participantSlots = toPositiveInt(Number(heat.participantSlots ?? 1))
   const advanceCount = Math.min(toPositiveInt(Number(heat.advanceCount ?? 1)), participantSlots)
   return {
-    id: heat.id || `round-${roundIndex + 1}-heat-${heatIndex + 1}`,
+    id: heat.id || generateId(),
     label: heat.label || `Heat ${heatIndex + 1}`,
     participantSlots,
     advanceCount,
@@ -202,11 +203,11 @@ export const normalizeHeat = (heat: Partial<HeatConfig>, roundIndex: number, hea
 }
 
 export const normalizeRound = (round: Partial<RoundConfig>, roundIndex: number): RoundConfig => {
-  const heatsInput = Array.isArray(round.heats) && round.heats.length > 0 ? round.heats : [createHeat(roundIndex, 0, 2, 1)]
+  const heatsInput = Array.isArray(round.heats) && round.heats.length > 0 ? round.heats : [createHeat(0, 2, 1)]
   return {
-    id: round.id || `round-${roundIndex + 1}`,
+    id: round.id || generateId(),
     label: round.label || `Round ${roundIndex + 1}`,
-    heats: heatsInput.map((heat, heatIndex) => normalizeHeat(heat, roundIndex, heatIndex)),
+    heats: heatsInput.map((heat, heatIndex) => normalizeHeat(heat, heatIndex)),
   }
 }
 

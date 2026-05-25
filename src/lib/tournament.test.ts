@@ -5,6 +5,7 @@ import {
   DEFAULT_PARTICIPANTS,
   DEFAULT_ROUNDS,
   evaluateHeatLaps,
+  generateId,
   hasStructuralRoundChanges,
   normalizeHeat,
   normalizeRound,
@@ -24,6 +25,8 @@ import type {
   RoundConfig,
   TournamentResults,
 } from './tournament'
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
 
 const namesOf = (participants: Array<Participant | null>): Array<string | null> =>
   participants.map((entry) => (entry ? entry.name : null))
@@ -91,15 +94,16 @@ describe('parseParticipantsFromLines', () => {
     expect(parseParticipantsFromLines('   \n  ')).toEqual([])
   })
 
-  it('produces slugified ids that include the 1-based index', () => {
+  it('generates unique UUID ids for each participant', () => {
     const result = parseParticipantsFromLines('Group 1\nWild Card!')
-    expect(result[0].id).toBe('p-1-group-1')
-    expect(result[1].id).toBe('p-2-wild-card')
+    expect(result[0].id).toMatch(UUID_RE)
+    expect(result[1].id).toMatch(UUID_RE)
+    expect(result[0].id).not.toBe(result[1].id)
   })
 
-  it('falls back to a "seed" slug when the name has no alphanumerics', () => {
+  it('generates a UUID id even when the name has no alphanumerics', () => {
     const result = parseParticipantsFromLines('---')
-    expect(result[0].id).toBe('p-1-seed')
+    expect(result[0].id).toMatch(UUID_RE)
     expect(result[0].name).toBe('---')
   })
 })
@@ -148,17 +152,28 @@ describe('parseParticipantsFromCsv', () => {
   })
 })
 
+describe('generateId', () => {
+  it('produces a valid v4 UUID', () => {
+    expect(generateId()).toMatch(UUID_RE)
+  })
+
+  it('produces unique ids across calls', () => {
+    const ids = Array.from({ length: 100 }, () => generateId())
+    expect(new Set(ids).size).toBe(ids.length)
+  })
+})
+
 describe('createHeat', () => {
-  it('produces an id and label derived from the round/heat index', () => {
-    const heat = createHeat(2, 1, 8, 4)
-    expect(heat.id).toBe('round-3-heat-2')
+  it('produces a UUID id and label derived from the heat index', () => {
+    const heat = createHeat(1, 8, 4)
+    expect(heat.id).toMatch(UUID_RE)
     expect(heat.label).toBe('Heat 2')
     expect(heat.participantSlots).toBe(8)
     expect(heat.advanceCount).toBe(4)
   })
 
   it('clamps non-positive counts to 1', () => {
-    const heat = createHeat(0, 0, 0, -3)
+    const heat = createHeat(0, 0, -3)
     expect(heat.participantSlots).toBe(1)
     expect(heat.advanceCount).toBe(1)
   })
@@ -166,28 +181,26 @@ describe('createHeat', () => {
 
 describe('normalizeHeat', () => {
   it('fills defaults when fields are missing', () => {
-    const heat = normalizeHeat({}, 0, 0)
-    expect(heat).toEqual({
-      id: 'round-1-heat-1',
-      label: 'Heat 1',
-      participantSlots: 1,
-      advanceCount: 1,
-    })
+    const heat = normalizeHeat({}, 0)
+    expect(heat.id).toMatch(UUID_RE)
+    expect(heat.label).toBe('Heat 1')
+    expect(heat.participantSlots).toBe(1)
+    expect(heat.advanceCount).toBe(1)
   })
 
   it('clamps advanceCount to participantSlots', () => {
-    const heat = normalizeHeat({ participantSlots: 4, advanceCount: 10 }, 0, 0)
+    const heat = normalizeHeat({ participantSlots: 4, advanceCount: 10 }, 0)
     expect(heat.advanceCount).toBe(4)
   })
 
   it('preserves an explicit id and label', () => {
-    const heat = normalizeHeat({ id: 'custom', label: 'My Heat', participantSlots: 5, advanceCount: 2 }, 0, 0)
+    const heat = normalizeHeat({ id: 'custom', label: 'My Heat', participantSlots: 5, advanceCount: 2 }, 0)
     expect(heat.id).toBe('custom')
     expect(heat.label).toBe('My Heat')
   })
 
   it('falls back to 1 when numeric fields are NaN or otherwise unparseable', () => {
-    const heat = normalizeHeat({ participantSlots: Number.NaN, advanceCount: Number.NaN }, 0, 0)
+    const heat = normalizeHeat({ participantSlots: Number.NaN, advanceCount: Number.NaN }, 0)
     expect(heat.participantSlots).toBe(1)
     expect(heat.advanceCount).toBe(1)
   })
@@ -196,7 +209,7 @@ describe('normalizeHeat', () => {
 describe('normalizeRound', () => {
   it('fills defaults when fields are missing', () => {
     const round = normalizeRound({}, 1)
-    expect(round.id).toBe('round-2')
+    expect(round.id).toMatch(UUID_RE)
     expect(round.label).toBe('Round 2')
     expect(round.heats).toHaveLength(1)
   })
@@ -221,8 +234,8 @@ describe('totalRoundSlots / totalRoundOutgoing', () => {
       id: 'round-1',
       label: 'Round 1',
       heats: [
-        createHeat(0, 0, 10, 5),
-        createHeat(0, 1, 11, 6),
+        createHeat(0, 10, 5),
+        createHeat(1, 11, 6),
       ],
     }
     expect(totalRoundSlots(round)).toBe(21)
@@ -232,8 +245,8 @@ describe('totalRoundSlots / totalRoundOutgoing', () => {
 
 describe('roundsAreEqual', () => {
   const base: RoundConfig[] = [
-    { id: 'r1', label: 'Round 1', heats: [createHeat(0, 0, 4, 2), createHeat(0, 1, 4, 2)] },
-    { id: 'r2', label: 'Final', heats: [createHeat(1, 0, 4, 1)] },
+    { id: 'r1', label: 'Round 1', heats: [createHeat(0, 4, 2), createHeat(1, 4, 2)] },
+    { id: 'r2', label: 'Final', heats: [createHeat(0, 4, 1)] },
   ]
 
   it('returns true for identical rounds', () => {
@@ -265,7 +278,7 @@ describe('roundsAreEqual', () => {
 
   it('returns false when heat count differs', () => {
     const modified = JSON.parse(JSON.stringify(base)) as RoundConfig[]
-    modified[0].heats.push(createHeat(0, 2, 3, 1))
+    modified[0].heats.push(createHeat(2, 3, 1))
     expect(roundsAreEqual(base, modified)).toBe(false)
   })
 
@@ -276,8 +289,8 @@ describe('roundsAreEqual', () => {
 
 describe('hasStructuralRoundChanges', () => {
   const base: RoundConfig[] = [
-    { id: 'r1', label: 'Round 1', heats: [createHeat(0, 0, 4, 2), createHeat(0, 1, 4, 2)] },
-    { id: 'r2', label: 'Final', heats: [createHeat(1, 0, 4, 1)] },
+    { id: 'r1', label: 'Round 1', heats: [createHeat(0, 4, 2), createHeat(1, 4, 2)] },
+    { id: 'r2', label: 'Final', heats: [createHeat(0, 4, 1)] },
   ]
 
   it('returns false for identical rounds', () => {
@@ -306,7 +319,7 @@ describe('hasStructuralRoundChanges', () => {
 
   it('returns true when heat count differs', () => {
     const modified = JSON.parse(JSON.stringify(base)) as RoundConfig[]
-    modified[0].heats.push(createHeat(0, 2, 3, 1))
+    modified[0].heats.push(createHeat(2, 3, 1))
     expect(hasStructuralRoundChanges(base, modified)).toBe(true)
   })
 
@@ -321,8 +334,8 @@ describe('hasStructuralRoundChanges', () => {
 
 describe('validateTournament', () => {
   const passingRounds: RoundConfig[] = [
-    { id: 'r1', label: 'Round 1', heats: [createHeat(0, 0, 4, 2), createHeat(0, 1, 4, 2)] },
-    { id: 'r2', label: 'Final', heats: [createHeat(1, 0, 4, 1)] },
+    { id: 'r1', label: 'Round 1', heats: [createHeat(0, 4, 2), createHeat(1, 4, 2)] },
+    { id: 'r2', label: 'Final', heats: [createHeat(0, 4, 1)] },
   ]
   const passingParticipants = makeParticipants(8)
 
@@ -332,7 +345,7 @@ describe('validateTournament', () => {
 
   it('returns no errors for a valid single-round tournament', () => {
     const rounds: RoundConfig[] = [
-      { id: 'r1', label: 'Final', heats: [createHeat(0, 0, 4, 1)] },
+      { id: 'r1', label: 'Final', heats: [createHeat(0, 4, 1)] },
     ]
     expect(validateTournament(makeParticipants(4), rounds)).toEqual([])
   })
@@ -352,8 +365,8 @@ describe('validateTournament', () => {
 
   it('flags a heat whose advanceCount exceeds its participant slots', () => {
     const rounds: RoundConfig[] = [
-      { id: 'r1', label: 'Round 1', heats: [{ ...createHeat(0, 0, 4, 2), advanceCount: 10 }] },
-      { id: 'r2', label: 'Final', heats: [createHeat(1, 0, 10, 1)] },
+      { id: 'r1', label: 'Round 1', heats: [{ ...createHeat(0, 4, 2), advanceCount: 10 }] },
+      { id: 'r2', label: 'Final', heats: [createHeat(0, 10, 1)] },
     ]
     const errors = validateTournament(makeParticipants(4), rounds)
     expect(errors.some((m) => m.includes('advancing count cannot exceed participant slots'))).toBe(true)
@@ -361,8 +374,8 @@ describe('validateTournament', () => {
 
   it('flags an outgoing/incoming round mismatch', () => {
     const rounds: RoundConfig[] = [
-      { id: 'r1', label: 'Round 1', heats: [createHeat(0, 0, 6, 4)] },
-      { id: 'r2', label: 'Final', heats: [createHeat(1, 0, 3, 1)] },
+      { id: 'r1', label: 'Round 1', heats: [createHeat(0, 6, 4)] },
+      { id: 'r2', label: 'Final', heats: [createHeat(0, 3, 1)] },
     ]
     const errors = validateTournament(makeParticipants(6), rounds)
     expect(
@@ -372,8 +385,8 @@ describe('validateTournament', () => {
 
   it('accumulates multiple errors rather than short-circuiting', () => {
     const rounds: RoundConfig[] = [
-      { id: 'r1', label: 'Round 1', heats: [{ ...createHeat(0, 0, 4, 2), advanceCount: 10 }] },
-      { id: 'r2', label: 'Final', heats: [createHeat(1, 0, 5, 1)] },
+      { id: 'r1', label: 'Round 1', heats: [{ ...createHeat(0, 4, 2), advanceCount: 10 }] },
+      { id: 'r2', label: 'Final', heats: [createHeat(0, 5, 1)] },
     ]
     const errors = validateTournament(makeParticipants(3), rounds)
     expect(errors.some((m) => m.includes('Round 1 requires exactly 4 participants'))).toBe(true)
@@ -383,8 +396,8 @@ describe('validateTournament', () => {
 
   it('returns the exact accumulated errors and no spurious extras', () => {
     const rounds: RoundConfig[] = [
-      { id: 'r1', label: 'Round 1', heats: [{ ...createHeat(0, 0, 4, 2), advanceCount: 10 }] },
-      { id: 'r2', label: 'Final', heats: [createHeat(1, 0, 5, 1)] },
+      { id: 'r1', label: 'Round 1', heats: [{ ...createHeat(0, 4, 2), advanceCount: 10 }] },
+      { id: 'r2', label: 'Final', heats: [createHeat(0, 5, 1)] },
     ]
     expect(validateTournament(makeParticipants(3), rounds)).toEqual([
       'Round 1 requires exactly 4 participants (currently 3).',
@@ -395,8 +408,8 @@ describe('validateTournament', () => {
 
   it('returns the exact error list when only the participant count is wrong', () => {
     const rounds: RoundConfig[] = [
-      { id: 'r1', label: 'Round 1', heats: [createHeat(0, 0, 4, 2), createHeat(0, 1, 4, 2)] },
-      { id: 'r2', label: 'Final', heats: [createHeat(1, 0, 4, 1)] },
+      { id: 'r1', label: 'Round 1', heats: [createHeat(0, 4, 2), createHeat(1, 4, 2)] },
+      { id: 'r2', label: 'Final', heats: [createHeat(0, 4, 1)] },
     ]
     expect(validateTournament(makeParticipants(5), rounds)).toEqual([
       'Round 1 requires exactly 8 participants (currently 5).',
@@ -409,8 +422,8 @@ describe('validateTournament', () => {
 
   it('flags duplicate round ids', () => {
     const rounds: RoundConfig[] = [
-      { id: 'round-1', label: 'Round 1', heats: [createHeat(0, 0, 4, 2)] },
-      { id: 'round-1', label: 'Round 2', heats: [createHeat(1, 0, 2, 1)] },
+      { id: 'round-1', label: 'Round 1', heats: [createHeat(0, 4, 2)] },
+      { id: 'round-1', label: 'Round 2', heats: [createHeat(0, 2, 1)] },
     ]
     const errors = validateTournament(makeParticipants(4), rounds)
     expect(errors.some((m) => m.includes('Duplicate round id'))).toBe(true)
@@ -418,8 +431,8 @@ describe('validateTournament', () => {
 
   it('flags duplicate heat ids across rounds', () => {
     const rounds: RoundConfig[] = [
-      { id: 'r1', label: 'Round 1', heats: [{ ...createHeat(0, 0, 4, 2), id: 'same-heat' }] },
-      { id: 'r2', label: 'Final', heats: [{ ...createHeat(1, 0, 2, 1), id: 'same-heat' }] },
+      { id: 'r1', label: 'Round 1', heats: [{ ...createHeat(0, 4, 2), id: 'same-heat' }] },
+      { id: 'r2', label: 'Final', heats: [{ ...createHeat(0, 2, 1), id: 'same-heat' }] },
     ]
     const errors = validateTournament(makeParticipants(4), rounds)
     expect(errors.some((m) => m.includes('Duplicate heat id'))).toBe(true)
@@ -428,7 +441,7 @@ describe('validateTournament', () => {
   it('flags duplicate participant names', () => {
     const participants = parseParticipantsFromLines('Alice\nBob\nAlice\nCharlie')
     const rounds: RoundConfig[] = [
-      { id: 'r1', label: 'Final', heats: [createHeat(0, 0, 4, 1)] },
+      { id: 'r1', label: 'Final', heats: [createHeat(0, 4, 1)] },
     ]
     const errors = validateTournament(participants, rounds)
     expect(errors.some((m) => m.includes('Duplicate participant'))).toBe(true)
@@ -441,8 +454,8 @@ describe('validateTournament', () => {
 
   it('flags duplicate round labels', () => {
     const rounds: RoundConfig[] = [
-      { id: 'r1', label: 'Round 1', heats: [createHeat(0, 0, 4, 2)] },
-      { id: 'r2', label: 'Round 1', heats: [createHeat(1, 0, 2, 1)] },
+      { id: 'r1', label: 'Round 1', heats: [createHeat(0, 4, 2)] },
+      { id: 'r2', label: 'Round 1', heats: [createHeat(0, 2, 1)] },
     ]
     const errors = validateTournament(makeParticipants(4), rounds)
     expect(errors.some((m) => m.includes('Duplicate round name'))).toBe(true)
@@ -578,9 +591,9 @@ describe('buildTournament — round 1 seeding', () => {
       {
         id: 'r1',
         label: 'Round 1',
-        heats: [createHeat(0, 0, 3, 1), createHeat(0, 1, 3, 1), createHeat(0, 2, 2, 1)],
+        heats: [createHeat(0, 3, 1), createHeat(1, 3, 1), createHeat(2, 2, 1)],
       },
-      { id: 'r2', label: 'Final', heats: [createHeat(1, 0, 3, 1)] },
+      { id: 'r2', label: 'Final', heats: [createHeat(0, 3, 1)] },
     ]
     const participants = makeParticipants(8)
     const [roundOne] = buildTournament(rounds, participants, {})
@@ -594,8 +607,8 @@ describe('buildTournament — round 1 seeding', () => {
 
   it('inserts null placeholders when there are fewer participants than slots', () => {
     const rounds: RoundConfig[] = [
-      { id: 'r1', label: 'Round 1', heats: [createHeat(0, 0, 3, 1)] },
-      { id: 'r2', label: 'Final', heats: [createHeat(1, 0, 1, 1)] },
+      { id: 'r1', label: 'Round 1', heats: [createHeat(0, 3, 1)] },
+      { id: 'r2', label: 'Final', heats: [createHeat(0, 1, 1)] },
     ]
     const [roundOne] = buildTournament(rounds, makeParticipants(2), {})
     expect(namesOf(roundOne.heats[0].entrants.map((e) => e.participant))).toEqual(['P1', 'P2', null])
@@ -606,9 +619,9 @@ describe('buildTournament — round 1 seeding', () => {
       {
         id: 'r1',
         label: 'Round 1',
-        heats: [createHeat(0, 0, 3, 1), createHeat(0, 1, 2, 1)],
+        heats: [createHeat(0, 3, 1), createHeat(1, 2, 1)],
       },
-      { id: 'r2', label: 'Final', heats: [createHeat(1, 0, 2, 1)] },
+      { id: 'r2', label: 'Final', heats: [createHeat(0, 2, 1)] },
     ]
     const [roundOne] = buildTournament(rounds, [], {})
     expect(roundOne.heats).toHaveLength(2)
@@ -626,9 +639,9 @@ describe('buildTournament — source slot propagation', () => {
       {
         id: 'r1',
         label: 'Round 1',
-        heats: [createHeat(0, 0, 3, 2), createHeat(0, 1, 3, 2)],
+        heats: [createHeat(0, 3, 2), createHeat(1, 3, 2)],
       },
-      { id: 'r2', label: 'Final', heats: [createHeat(1, 0, 4, 1)] },
+      { id: 'r2', label: 'Final', heats: [createHeat(0, 4, 1)] },
     ]
     const [, finalRound] = buildTournament(rounds, makeParticipants(6), {})
     const finalHeat = finalRound.heats[0]
@@ -649,18 +662,18 @@ describe('buildTournament — source slot propagation', () => {
         id: 'r1',
         label: 'Round 1',
         heats: [
-          createHeat(0, 0, 3, 2),
-          createHeat(0, 1, 3, 2),
-          createHeat(0, 2, 3, 2),
-          createHeat(0, 3, 3, 2),
+          createHeat(0, 3, 2),
+          createHeat(1, 3, 2),
+          createHeat(2, 3, 2),
+          createHeat(3, 3, 2),
         ],
       },
       {
         id: 'r2',
         label: 'Round 2',
-        heats: [createHeat(1, 0, 4, 1), createHeat(1, 1, 4, 1)],
+        heats: [createHeat(0, 4, 1), createHeat(1, 4, 1)],
       },
-      { id: 'r3', label: 'Final', heats: [createHeat(2, 0, 2, 1)] },
+      { id: 'r3', label: 'Final', heats: [createHeat(0, 2, 1)] },
     ]
     const [, roundTwo] = buildTournament(rounds, makeParticipants(12), {})
 
@@ -683,19 +696,19 @@ describe('buildTournament — source slot propagation', () => {
       {
         id: 'r1',
         label: 'Round 1',
-        heats: [createHeat(0, 0, 3, 2), createHeat(0, 1, 3, 2)],
+        heats: [createHeat(0, 3, 2), createHeat(1, 3, 2)],
       },
-      { id: 'r2', label: 'Final', heats: [createHeat(1, 0, 4, 1)] },
+      { id: 'r2', label: 'Final', heats: [createHeat(0, 4, 1)] },
     ]
     const participants = makeParticipants(6)
     const results: TournamentResults = {
       r1: {
-        'round-1-heat-1': {
+        [rounds[0].heats[0].id]: {
           [participants[0].id]: '10',
           [participants[1].id]: '8',
           [participants[2].id]: '5',
         },
-        'round-1-heat-2': {
+        [rounds[0].heats[1].id]: {
           [participants[3].id]: '9',
           [participants[4].id]: '7',
           [participants[5].id]: '4',
@@ -711,14 +724,14 @@ describe('buildTournament — source slot propagation', () => {
       {
         id: 'r1',
         label: 'Round 1',
-        heats: [createHeat(0, 0, 3, 2), createHeat(0, 1, 3, 2)],
+        heats: [createHeat(0, 3, 2), createHeat(1, 3, 2)],
       },
-      { id: 'r2', label: 'Final', heats: [createHeat(1, 0, 4, 1)] },
+      { id: 'r2', label: 'Final', heats: [createHeat(0, 4, 1)] },
     ]
     const participants = makeParticipants(6)
     const results: TournamentResults = {
       r1: {
-        'round-1-heat-1': {
+        [rounds[0].heats[0].id]: {
           [participants[0].id]: '10',
           [participants[1].id]: '8',
           [participants[2].id]: '5',
@@ -744,13 +757,13 @@ describe('buildTournament — source slot propagation', () => {
 
   it('treats results referencing unknown participant ids as incomplete without crashing', () => {
     const rounds: RoundConfig[] = [
-      { id: 'r1', label: 'Round 1', heats: [createHeat(0, 0, 2, 1)] },
-      { id: 'r2', label: 'Final', heats: [createHeat(1, 0, 1, 1)] },
+      { id: 'r1', label: 'Round 1', heats: [createHeat(0, 2, 1)] },
+      { id: 'r2', label: 'Final', heats: [createHeat(0, 1, 1)] },
     ]
     const participants = makeParticipants(2)
     const results: TournamentResults = {
       r1: {
-        'round-1-heat-1': {
+        [rounds[0].heats[0].id]: {
           'p-99-ghost': '10',
           'p-100-phantom': '5',
         },
@@ -763,8 +776,8 @@ describe('buildTournament — source slot propagation', () => {
 
   it('ignores result entries keyed by a heat id that is not in the round', () => {
     const rounds: RoundConfig[] = [
-      { id: 'r1', label: 'Round 1', heats: [createHeat(0, 0, 2, 1)] },
-      { id: 'r2', label: 'Final', heats: [createHeat(1, 0, 1, 1)] },
+      { id: 'r1', label: 'Round 1', heats: [createHeat(0, 2, 1)] },
+      { id: 'r2', label: 'Final', heats: [createHeat(0, 1, 1)] },
     ]
     const participants = makeParticipants(2)
     const results: TournamentResults = {
@@ -785,20 +798,20 @@ describe('buildTournament — source slot propagation', () => {
       {
         id: 'r1',
         label: 'Round 1',
-        heats: [createHeat(0, 0, 4, 2), createHeat(0, 1, 4, 2)],
+        heats: [createHeat(0, 4, 2), createHeat(1, 4, 2)],
       },
-      { id: 'r2', label: 'Final', heats: [createHeat(1, 0, 4, 1)] },
+      { id: 'r2', label: 'Final', heats: [createHeat(0, 4, 1)] },
     ]
     const participants = makeParticipants(8)
     const results: TournamentResults = {
       r1: {
-        'round-1-heat-1': {
+        [rounds[0].heats[0].id]: {
           [participants[0].id]: '10',
           [participants[1].id]: '8',
           [participants[2].id]: '8',
           [participants[3].id]: '3',
         },
-        'round-1-heat-2': {
+        [rounds[0].heats[1].id]: {
           [participants[4].id]: '11',
           [participants[5].id]: '6',
           [participants[6].id]: '4',
@@ -827,7 +840,7 @@ describe('buildTournament — source slot propagation', () => {
 
   it('handles a single-round tournament without attempting to propagate sources', () => {
     const rounds: RoundConfig[] = [
-      { id: 'r1', label: 'Final', heats: [createHeat(0, 0, 2, 1)] },
+      { id: 'r1', label: 'Final', heats: [createHeat(0, 2, 1)] },
     ]
     const [onlyRound] = buildTournament(rounds, makeParticipants(2), {})
     expect(onlyRound.heats).toHaveLength(1)
@@ -841,21 +854,21 @@ describe('buildTournament — source slot propagation', () => {
       {
         id: 'r1',
         label: 'Round 1',
-        heats: [createHeat(0, 0, 4, 2), createHeat(0, 1, 4, 2)],
+        heats: [createHeat(0, 4, 2), createHeat(1, 4, 2)],
       },
-      { id: 'r2', label: 'Round 2', heats: [createHeat(1, 0, 4, 2)] },
-      { id: 'r3', label: 'Final', heats: [createHeat(2, 0, 2, 1)] },
+      { id: 'r2', label: 'Round 2', heats: [createHeat(0, 4, 2)] },
+      { id: 'r3', label: 'Final', heats: [createHeat(0, 2, 1)] },
     ]
     const participants = makeParticipants(8)
     const results: TournamentResults = {
       r1: {
-        'round-1-heat-1': {
+        [rounds[0].heats[0].id]: {
           [participants[0].id]: '10',
           [participants[1].id]: '9',
           [participants[2].id]: '5',
           [participants[3].id]: '3',
         },
-        'round-1-heat-2': {
+        [rounds[0].heats[1].id]: {
           [participants[4].id]: '9',
           [participants[5].id]: '8',
           [participants[6].id]: '5',
@@ -863,7 +876,7 @@ describe('buildTournament — source slot propagation', () => {
         },
       },
       r2: {
-        'round-2-heat-1': {
+        [rounds[1].heats[0].id]: {
           [participants[0].id]: '10',
           [participants[1].id]: '9',
           [participants[4].id]: '8',
@@ -882,13 +895,13 @@ describe('buildTournament — source slot propagation', () => {
 
   it('passes every entrant through when advanceCount equals participantSlots', () => {
     const rounds: RoundConfig[] = [
-      { id: 'r1', label: 'Round 1', heats: [createHeat(0, 0, 3, 3)] },
-      { id: 'r2', label: 'Final', heats: [createHeat(1, 0, 3, 1)] },
+      { id: 'r1', label: 'Round 1', heats: [createHeat(0, 3, 3)] },
+      { id: 'r2', label: 'Final', heats: [createHeat(0, 3, 1)] },
     ]
     const participants = makeParticipants(3)
     const results: TournamentResults = {
       r1: {
-        'round-1-heat-1': {
+        [rounds[0].heats[0].id]: {
           [participants[0].id]: '10',
           [participants[1].id]: '9',
           [participants[2].id]: '8',
@@ -901,13 +914,13 @@ describe('buildTournament — source slot propagation', () => {
 
   it('attributes a boundary-tie overflow entrant to the source of the cutoff slot', () => {
     const rounds: RoundConfig[] = [
-      { id: 'r1', label: 'Round 1', heats: [createHeat(0, 0, 4, 2)] },
-      { id: 'r2', label: 'Final', heats: [createHeat(1, 0, 2, 1)] },
+      { id: 'r1', label: 'Round 1', heats: [createHeat(0, 4, 2)] },
+      { id: 'r2', label: 'Final', heats: [createHeat(0, 2, 1)] },
     ]
     const participants = makeParticipants(4)
     const results: TournamentResults = {
       r1: {
-        'round-1-heat-1': {
+        [rounds[0].heats[0].id]: {
           [participants[0].id]: '10',
           [participants[1].id]: '8',
           [participants[2].id]: '8',
@@ -961,18 +974,18 @@ describe('buildTournament — participant uniqueness across heats', () => {
         id: 'r1',
         label: 'Round 1',
         heats: [
-          createHeat(0, 0, 3, 2),
-          createHeat(0, 1, 3, 2),
-          createHeat(0, 2, 3, 2),
-          createHeat(0, 3, 3, 2),
+          createHeat(0, 3, 2),
+          createHeat(1, 3, 2),
+          createHeat(2, 3, 2),
+          createHeat(3, 3, 2),
         ],
       },
       {
         id: 'r2',
         label: 'Round 2',
-        heats: [createHeat(1, 0, 4, 1), createHeat(1, 1, 4, 1)],
+        heats: [createHeat(0, 4, 1), createHeat(1, 4, 1)],
       },
-      { id: 'r3', label: 'Final', heats: [createHeat(2, 0, 2, 1)] },
+      { id: 'r3', label: 'Final', heats: [createHeat(0, 2, 1)] },
     ]
     const [, roundTwo] = buildTournament(rounds, makeParticipants(12), {})
     const sourceKeys = roundTwo.heats.flatMap((heat) =>
@@ -988,18 +1001,18 @@ describe('buildTournament — participant uniqueness across heats', () => {
         id: 'r1',
         label: 'Round 1',
         heats: [
-          createHeat(0, 0, 4, 2),
-          createHeat(0, 1, 4, 2),
-          createHeat(0, 2, 4, 2),
-          createHeat(0, 3, 4, 2),
+          createHeat(0, 4, 2),
+          createHeat(1, 4, 2),
+          createHeat(2, 4, 2),
+          createHeat(3, 4, 2),
         ],
       },
       {
         id: 'r2',
         label: 'Round 2',
-        heats: [createHeat(1, 0, 4, 1), createHeat(1, 1, 4, 1)],
+        heats: [createHeat(0, 4, 1), createHeat(1, 4, 1)],
       },
-      { id: 'r3', label: 'Final', heats: [createHeat(2, 0, 2, 1)] },
+      { id: 'r3', label: 'Final', heats: [createHeat(0, 2, 1)] },
     ]
     const participants = makeParticipants(16)
     const heatLaps = (offset: number) => ({
@@ -1010,10 +1023,10 @@ describe('buildTournament — participant uniqueness across heats', () => {
     })
     const results: TournamentResults = {
       r1: {
-        'round-1-heat-1': heatLaps(0),
-        'round-1-heat-2': heatLaps(4),
-        'round-1-heat-3': heatLaps(8),
-        'round-1-heat-4': heatLaps(12),
+        [rounds[0].heats[0].id]: heatLaps(0),
+        [rounds[0].heats[1].id]: heatLaps(4),
+        [rounds[0].heats[2].id]: heatLaps(8),
+        [rounds[0].heats[3].id]: heatLaps(12),
       },
     }
     const [, roundTwo] = buildTournament(rounds, participants, results)
@@ -1027,41 +1040,41 @@ describe('buildTournament — participant uniqueness across heats', () => {
         id: 'r1',
         label: 'Round 1',
         heats: [
-          createHeat(0, 0, 4, 2),
-          createHeat(0, 1, 4, 2),
-          createHeat(0, 2, 4, 2),
-          createHeat(0, 3, 4, 2),
+          createHeat(0, 4, 2),
+          createHeat(1, 4, 2),
+          createHeat(2, 4, 2),
+          createHeat(3, 4, 2),
         ],
       },
       {
         id: 'r2',
         label: 'Round 2',
-        heats: [createHeat(1, 0, 4, 1), createHeat(1, 1, 4, 1)],
+        heats: [createHeat(0, 4, 1), createHeat(1, 4, 1)],
       },
-      { id: 'r3', label: 'Final', heats: [createHeat(2, 0, 2, 1)] },
+      { id: 'r3', label: 'Final', heats: [createHeat(0, 2, 1)] },
     ]
     const participants = makeParticipants(16)
     const results: TournamentResults = {
       r1: {
-        'round-1-heat-1': {
+        [rounds[0].heats[0].id]: {
           [participants[0].id]: '10',
           [participants[1].id]: '8',
           [participants[2].id]: '8',
           [participants[3].id]: '3',
         },
-        'round-1-heat-2': {
+        [rounds[0].heats[1].id]: {
           [participants[4].id]: '11',
           [participants[5].id]: '6',
           [participants[6].id]: '4',
           [participants[7].id]: '2',
         },
-        'round-1-heat-3': {
+        [rounds[0].heats[2].id]: {
           [participants[8].id]: '10',
           [participants[9].id]: '8',
           [participants[10].id]: '5',
           [participants[11].id]: '3',
         },
-        'round-1-heat-4': {
+        [rounds[0].heats[3].id]: {
           [participants[12].id]: '10',
           [participants[13].id]: '8',
           [participants[14].id]: '5',
@@ -1081,18 +1094,18 @@ describe('buildTournament — participant uniqueness across heats', () => {
         id: 'r1',
         label: 'Round 1',
         heats: [
-          createHeat(0, 0, 4, 2),
-          createHeat(0, 1, 4, 2),
-          createHeat(0, 2, 4, 2),
-          createHeat(0, 3, 4, 2),
+          createHeat(0, 4, 2),
+          createHeat(1, 4, 2),
+          createHeat(2, 4, 2),
+          createHeat(3, 4, 2),
         ],
       },
       {
         id: 'r2',
         label: 'Round 2',
-        heats: [createHeat(1, 0, 4, 1), createHeat(1, 1, 4, 1)],
+        heats: [createHeat(0, 4, 1), createHeat(1, 4, 1)],
       },
-      { id: 'r3', label: 'Final', heats: [createHeat(2, 0, 2, 1)] },
+      { id: 'r3', label: 'Final', heats: [createHeat(0, 2, 1)] },
     ]
     const participants = makeParticipants(16)
     const tiedHeatLaps = (offset: number) => ({
@@ -1103,10 +1116,10 @@ describe('buildTournament — participant uniqueness across heats', () => {
     })
     const results: TournamentResults = {
       r1: {
-        'round-1-heat-1': tiedHeatLaps(0),
-        'round-1-heat-2': tiedHeatLaps(4),
-        'round-1-heat-3': tiedHeatLaps(8),
-        'round-1-heat-4': tiedHeatLaps(12),
+        [rounds[0].heats[0].id]: tiedHeatLaps(0),
+        [rounds[0].heats[1].id]: tiedHeatLaps(4),
+        [rounds[0].heats[2].id]: tiedHeatLaps(8),
+        [rounds[0].heats[3].id]: tiedHeatLaps(12),
       },
     }
     const [, roundTwo] = buildTournament(rounds, participants, results)
@@ -1121,38 +1134,38 @@ describe('buildTournament — participant uniqueness across heats', () => {
         id: 'r1',
         label: 'Round 1',
         heats: [
-          createHeat(0, 0, 3, 2),
-          createHeat(0, 1, 3, 2),
-          createHeat(0, 2, 3, 2),
-          createHeat(0, 3, 3, 2),
+          createHeat(0, 3, 2),
+          createHeat(1, 3, 2),
+          createHeat(2, 3, 2),
+          createHeat(3, 3, 2),
         ],
       },
       {
         id: 'r2',
         label: 'Round 2',
-        heats: [createHeat(1, 0, 4, 1), createHeat(1, 1, 4, 1)],
+        heats: [createHeat(0, 4, 1), createHeat(1, 4, 1)],
       },
-      { id: 'r3', label: 'Final', heats: [createHeat(2, 0, 2, 1)] },
+      { id: 'r3', label: 'Final', heats: [createHeat(0, 2, 1)] },
     ]
     const participants = makeParticipants(12)
     const results: TournamentResults = {
       r1: {
-        'round-1-heat-1': {
+        [rounds[0].heats[0].id]: {
           [participants[0].id]: '10',
           [participants[1].id]: '10',
           [participants[2].id]: '5',
         },
-        'round-1-heat-2': {
+        [rounds[0].heats[1].id]: {
           [participants[3].id]: '9',
           [participants[4].id]: '7',
           [participants[5].id]: '4',
         },
-        'round-1-heat-3': {
+        [rounds[0].heats[2].id]: {
           [participants[6].id]: '8',
           [participants[7].id]: '8',
           [participants[8].id]: '3',
         },
-        'round-1-heat-4': {
+        [rounds[0].heats[3].id]: {
           [participants[9].id]: '11',
           [participants[10].id]: '6',
           [participants[11].id]: '2',
@@ -1171,18 +1184,18 @@ describe('buildTournament — participant uniqueness across heats', () => {
         id: 'r1',
         label: 'Round 1',
         heats: [
-          createHeat(0, 0, 3, 2),
-          createHeat(0, 1, 3, 2),
-          createHeat(0, 2, 3, 2),
-          createHeat(0, 3, 3, 2),
+          createHeat(0, 3, 2),
+          createHeat(1, 3, 2),
+          createHeat(2, 3, 2),
+          createHeat(3, 3, 2),
         ],
       },
       {
         id: 'r2',
         label: 'Round 2',
-        heats: [createHeat(1, 0, 4, 1), createHeat(1, 1, 4, 1)],
+        heats: [createHeat(0, 4, 1), createHeat(1, 4, 1)],
       },
-      { id: 'r3', label: 'Final', heats: [createHeat(2, 0, 2, 1)] },
+      { id: 'r3', label: 'Final', heats: [createHeat(0, 2, 1)] },
     ]
     const participants = makeParticipants(12)
     const heatLaps = (offset: number) => ({
@@ -1192,19 +1205,19 @@ describe('buildTournament — participant uniqueness across heats', () => {
     })
     const results: TournamentResults = {
       r1: {
-        'round-1-heat-1': heatLaps(0),
-        'round-1-heat-2': heatLaps(3),
-        'round-1-heat-3': heatLaps(6),
-        'round-1-heat-4': heatLaps(9),
+        [rounds[0].heats[0].id]: heatLaps(0),
+        [rounds[0].heats[1].id]: heatLaps(3),
+        [rounds[0].heats[2].id]: heatLaps(6),
+        [rounds[0].heats[3].id]: heatLaps(9),
       },
       r2: {
-        'round-2-heat-1': {
+        [rounds[1].heats[0].id]: {
           [participants[0].id]: '10',
           [participants[1].id]: '7',
           [participants[3].id]: '9',
           [participants[4].id]: '5',
         },
-        'round-2-heat-2': {
+        [rounds[1].heats[1].id]: {
           [participants[6].id]: '11',
           [participants[7].id]: '6',
           [participants[9].id]: '8',
@@ -1266,18 +1279,18 @@ describe('buildTournament — every qualifier advances', () => {
         id: 'r1',
         label: 'Round 1',
         heats: [
-          createHeat(0, 0, 4, 2),
-          createHeat(0, 1, 4, 2),
-          createHeat(0, 2, 4, 2),
-          createHeat(0, 3, 4, 2),
+          createHeat(0, 4, 2),
+          createHeat(1, 4, 2),
+          createHeat(2, 4, 2),
+          createHeat(3, 4, 2),
         ],
       },
       {
         id: 'r2',
         label: 'Round 2',
-        heats: [createHeat(1, 0, 4, 1), createHeat(1, 1, 4, 1)],
+        heats: [createHeat(0, 4, 1), createHeat(1, 4, 1)],
       },
-      { id: 'r3', label: 'Final', heats: [createHeat(2, 0, 2, 1)] },
+      { id: 'r3', label: 'Final', heats: [createHeat(0, 2, 1)] },
     ]
     const participants = makeParticipants(16)
     const heatLaps = (offset: number) => ({
@@ -1288,10 +1301,10 @@ describe('buildTournament — every qualifier advances', () => {
     })
     const results: TournamentResults = {
       r1: {
-        'round-1-heat-1': heatLaps(0),
-        'round-1-heat-2': heatLaps(4),
-        'round-1-heat-3': heatLaps(8),
-        'round-1-heat-4': heatLaps(12),
+        [rounds[0].heats[0].id]: heatLaps(0),
+        [rounds[0].heats[1].id]: heatLaps(4),
+        [rounds[0].heats[2].id]: heatLaps(8),
+        [rounds[0].heats[3].id]: heatLaps(12),
       },
     }
     const built = buildTournament(rounds, participants, results)
@@ -1304,18 +1317,18 @@ describe('buildTournament — every qualifier advances', () => {
         id: 'r1',
         label: 'Round 1',
         heats: [
-          createHeat(0, 0, 4, 2),
-          createHeat(0, 1, 4, 2),
-          createHeat(0, 2, 4, 2),
-          createHeat(0, 3, 4, 2),
+          createHeat(0, 4, 2),
+          createHeat(1, 4, 2),
+          createHeat(2, 4, 2),
+          createHeat(3, 4, 2),
         ],
       },
       {
         id: 'r2',
         label: 'Round 2',
-        heats: [createHeat(1, 0, 4, 1), createHeat(1, 1, 4, 1)],
+        heats: [createHeat(0, 4, 1), createHeat(1, 4, 1)],
       },
-      { id: 'r3', label: 'Final', heats: [createHeat(2, 0, 2, 1)] },
+      { id: 'r3', label: 'Final', heats: [createHeat(0, 2, 1)] },
     ]
     const participants = makeParticipants(16)
     const cleanLaps = (offset: number) => ({
@@ -1326,15 +1339,15 @@ describe('buildTournament — every qualifier advances', () => {
     })
     const results: TournamentResults = {
       r1: {
-        'round-1-heat-1': {
+        [rounds[0].heats[0].id]: {
           [participants[0].id]: '10',
           [participants[1].id]: '8',
           [participants[2].id]: '8',
           [participants[3].id]: '3',
         },
-        'round-1-heat-2': cleanLaps(4),
-        'round-1-heat-3': cleanLaps(8),
-        'round-1-heat-4': cleanLaps(12),
+        [rounds[0].heats[1].id]: cleanLaps(4),
+        [rounds[0].heats[2].id]: cleanLaps(8),
+        [rounds[0].heats[3].id]: cleanLaps(12),
       },
     }
     const built = buildTournament(rounds, participants, results)
@@ -1347,18 +1360,18 @@ describe('buildTournament — every qualifier advances', () => {
         id: 'r1',
         label: 'Round 1',
         heats: [
-          createHeat(0, 0, 4, 2),
-          createHeat(0, 1, 4, 2),
-          createHeat(0, 2, 4, 2),
-          createHeat(0, 3, 4, 2),
+          createHeat(0, 4, 2),
+          createHeat(1, 4, 2),
+          createHeat(2, 4, 2),
+          createHeat(3, 4, 2),
         ],
       },
       {
         id: 'r2',
         label: 'Round 2',
-        heats: [createHeat(1, 0, 4, 1), createHeat(1, 1, 4, 1)],
+        heats: [createHeat(0, 4, 1), createHeat(1, 4, 1)],
       },
-      { id: 'r3', label: 'Final', heats: [createHeat(2, 0, 2, 1)] },
+      { id: 'r3', label: 'Final', heats: [createHeat(0, 2, 1)] },
     ]
     const participants = makeParticipants(16)
     const tiedLaps = (offset: number) => ({
@@ -1369,10 +1382,10 @@ describe('buildTournament — every qualifier advances', () => {
     })
     const results: TournamentResults = {
       r1: {
-        'round-1-heat-1': tiedLaps(0),
-        'round-1-heat-2': tiedLaps(4),
-        'round-1-heat-3': tiedLaps(8),
-        'round-1-heat-4': tiedLaps(12),
+        [rounds[0].heats[0].id]: tiedLaps(0),
+        [rounds[0].heats[1].id]: tiedLaps(4),
+        [rounds[0].heats[2].id]: tiedLaps(8),
+        [rounds[0].heats[3].id]: tiedLaps(12),
       },
     }
     const built = buildTournament(rounds, participants, results)
@@ -1384,19 +1397,19 @@ describe('buildTournament — every qualifier advances', () => {
       {
         id: 'r1',
         label: 'Round 1',
-        heats: [createHeat(0, 0, 3, 2), createHeat(0, 1, 3, 2)],
+        heats: [createHeat(0, 3, 2), createHeat(1, 3, 2)],
       },
-      { id: 'r2', label: 'Final', heats: [createHeat(1, 0, 4, 1)] },
+      { id: 'r2', label: 'Final', heats: [createHeat(0, 4, 1)] },
     ]
     const participants = makeParticipants(6)
     const results: TournamentResults = {
       r1: {
-        'round-1-heat-1': {
+        [rounds[0].heats[0].id]: {
           [participants[0].id]: '10',
           [participants[1].id]: '10',
           [participants[2].id]: '5',
         },
-        'round-1-heat-2': {
+        [rounds[0].heats[1].id]: {
           [participants[3].id]: '9',
           [participants[4].id]: '7',
           [participants[5].id]: '4',
@@ -1413,18 +1426,18 @@ describe('buildTournament — every qualifier advances', () => {
         id: 'r1',
         label: 'Round 1',
         heats: [
-          createHeat(0, 0, 3, 2),
-          createHeat(0, 1, 3, 2),
-          createHeat(0, 2, 3, 2),
-          createHeat(0, 3, 3, 2),
+          createHeat(0, 3, 2),
+          createHeat(1, 3, 2),
+          createHeat(2, 3, 2),
+          createHeat(3, 3, 2),
         ],
       },
       {
         id: 'r2',
         label: 'Round 2',
-        heats: [createHeat(1, 0, 4, 1), createHeat(1, 1, 4, 1)],
+        heats: [createHeat(0, 4, 1), createHeat(1, 4, 1)],
       },
-      { id: 'r3', label: 'Final', heats: [createHeat(2, 0, 2, 1)] },
+      { id: 'r3', label: 'Final', heats: [createHeat(0, 2, 1)] },
     ]
     const participants = makeParticipants(12)
     const heatLaps = (offset: number) => ({
@@ -1434,19 +1447,19 @@ describe('buildTournament — every qualifier advances', () => {
     })
     const results: TournamentResults = {
       r1: {
-        'round-1-heat-1': heatLaps(0),
-        'round-1-heat-2': heatLaps(3),
-        'round-1-heat-3': heatLaps(6),
-        'round-1-heat-4': heatLaps(9),
+        [rounds[0].heats[0].id]: heatLaps(0),
+        [rounds[0].heats[1].id]: heatLaps(3),
+        [rounds[0].heats[2].id]: heatLaps(6),
+        [rounds[0].heats[3].id]: heatLaps(9),
       },
       r2: {
-        'round-2-heat-1': {
+        [rounds[1].heats[0].id]: {
           [participants[0].id]: '10',
           [participants[1].id]: '7',
           [participants[3].id]: '9',
           [participants[4].id]: '5',
         },
-        'round-2-heat-2': {
+        [rounds[1].heats[1].id]: {
           [participants[6].id]: '11',
           [participants[7].id]: '6',
           [participants[9].id]: '8',
@@ -1467,18 +1480,18 @@ describe('buildTournament — structural invariants', () => {
         id: 'r1',
         label: 'Round 1',
         heats: [
-          createHeat(0, 0, 4, 2),
-          createHeat(0, 1, 4, 2),
-          createHeat(0, 2, 4, 2),
-          createHeat(0, 3, 4, 2),
+          createHeat(0, 4, 2),
+          createHeat(1, 4, 2),
+          createHeat(2, 4, 2),
+          createHeat(3, 4, 2),
         ],
       },
       {
         id: 'r2',
         label: 'Round 2',
-        heats: [createHeat(1, 0, 4, 2), createHeat(1, 1, 4, 2)],
+        heats: [createHeat(0, 4, 2), createHeat(1, 4, 2)],
       },
-      { id: 'r3', label: 'Final', heats: [createHeat(2, 0, 4, 1)] },
+      { id: 'r3', label: 'Final', heats: [createHeat(0, 4, 1)] },
     ]
     const participants = makeParticipants(16)
     const cleanLaps = (offset: number) => ({
@@ -1489,15 +1502,15 @@ describe('buildTournament — structural invariants', () => {
     })
     const results: TournamentResults = {
       r1: {
-        'round-1-heat-1': {
+        [rounds[0].heats[0].id]: {
           [participants[0].id]: '10',
           [participants[1].id]: '8',
           [participants[2].id]: '8',
           [participants[3].id]: '3',
         },
-        'round-1-heat-2': cleanLaps(4),
-        'round-1-heat-3': cleanLaps(8),
-        'round-1-heat-4': cleanLaps(12),
+        [rounds[0].heats[1].id]: cleanLaps(4),
+        [rounds[0].heats[2].id]: cleanLaps(8),
+        [rounds[0].heats[3].id]: cleanLaps(12),
       },
     }
     return {
@@ -1513,9 +1526,9 @@ describe('buildTournament — structural invariants', () => {
       {
         id: 'r1',
         label: 'Round 1',
-        heats: [createHeat(0, 0, 4, 2), createHeat(0, 1, 4, 2), createHeat(0, 2, 4, 2)],
+        heats: [createHeat(0, 4, 2), createHeat(1, 4, 2), createHeat(2, 4, 2)],
       },
-      { id: 'r2', label: 'Final', heats: [createHeat(1, 0, 6, 1)] },
+      { id: 'r2', label: 'Final', heats: [createHeat(0, 6, 1)] },
     ]
     const participants = makeParticipants(10)
     const [roundOne] = buildTournament(rounds, participants, {})
@@ -1614,24 +1627,24 @@ describe('buildTournament — structural invariants', () => {
       {
         id: 'r1',
         label: 'Round 1',
-        heats: [createHeat(0, 0, 3, 2), createHeat(0, 1, 3, 2)],
+        heats: [createHeat(0, 3, 2), createHeat(1, 3, 2)],
       },
       {
         id: 'r2',
         label: 'Round 2',
-        heats: [createHeat(1, 0, 3, 1), createHeat(1, 1, 1, 1)],
+        heats: [createHeat(0, 3, 1), createHeat(1, 1, 1)],
       },
-      { id: 'r3', label: 'Final', heats: [createHeat(2, 0, 2, 1)] },
+      { id: 'r3', label: 'Final', heats: [createHeat(0, 2, 1)] },
     ]
     const participants = makeParticipants(6)
     const results: TournamentResults = {
       r1: {
-        'round-1-heat-1': {
+        [rounds[0].heats[0].id]: {
           [participants[0].id]: '10',
           [participants[1].id]: '8',
           [participants[2].id]: '5',
         },
-        'round-1-heat-2': {
+        [rounds[0].heats[1].id]: {
           [participants[3].id]: '10',
           [participants[4].id]: '10',
           [participants[5].id]: '4',
@@ -1652,8 +1665,8 @@ describe('buildTournament — structural invariants', () => {
 describe('buildTournament — round status flags', () => {
   it('reports canAdvance=false until all heats in the round are complete', () => {
     const rounds: RoundConfig[] = [
-      { id: 'r1', label: 'Round 1', heats: [createHeat(0, 0, 2, 1)] },
-      { id: 'r2', label: 'Final', heats: [createHeat(1, 0, 1, 1)] },
+      { id: 'r1', label: 'Round 1', heats: [createHeat(0, 2, 1)] },
+      { id: 'r2', label: 'Final', heats: [createHeat(0, 1, 1)] },
     ]
     const [roundOne] = buildTournament(rounds, makeParticipants(2), {})
     expect(roundOne.canAdvance).toBe(false)
@@ -1667,18 +1680,18 @@ describe('buildTournament — round status flags', () => {
       {
         id: 'r1',
         label: 'Round 1',
-        heats: [createHeat(0, 0, 2, 1), createHeat(0, 1, 2, 1)],
+        heats: [createHeat(0, 2, 1), createHeat(1, 2, 1)],
       },
-      { id: 'r2', label: 'Final', heats: [createHeat(1, 0, 2, 1)] },
+      { id: 'r2', label: 'Final', heats: [createHeat(0, 2, 1)] },
     ]
     const participants = makeParticipants(4)
     const results: TournamentResults = {
       r1: {
-        'round-1-heat-1': {
+        [rounds[0].heats[0].id]: {
           [participants[0].id]: '10',
           [participants[1].id]: '5',
         },
-        'round-1-heat-2': {
+        [rounds[0].heats[1].id]: {
           [participants[2].id]: '9',
           [participants[3].id]: '4',
         },
@@ -1696,13 +1709,13 @@ describe('buildTournament — round status flags', () => {
 
   it('reports hasTie=true and a corresponding message for a tie among qualifying positions', () => {
     const rounds: RoundConfig[] = [
-      { id: 'r1', label: 'Round 1', heats: [createHeat(0, 0, 3, 2)] },
-      { id: 'r2', label: 'Final', heats: [createHeat(1, 0, 2, 1)] },
+      { id: 'r1', label: 'Round 1', heats: [createHeat(0, 3, 2)] },
+      { id: 'r2', label: 'Final', heats: [createHeat(0, 2, 1)] },
     ]
     const participants = makeParticipants(3)
     const results: TournamentResults = {
       r1: {
-        'round-1-heat-1': {
+        [rounds[0].heats[0].id]: {
           [participants[0].id]: '10',
           [participants[1].id]: '10',
           [participants[2].id]: '5',
@@ -1716,8 +1729,8 @@ describe('buildTournament — round status flags', () => {
 
   it('suppresses advancement messages on the final round', () => {
     const rounds: RoundConfig[] = [
-      { id: 'r1', label: 'Round 1', heats: [createHeat(0, 0, 2, 1)] },
-      { id: 'r2', label: 'Final', heats: [createHeat(1, 0, 1, 1)] },
+      { id: 'r1', label: 'Round 1', heats: [createHeat(0, 2, 1)] },
+      { id: 'r2', label: 'Final', heats: [createHeat(0, 1, 1)] },
     ]
     const [, finalRound] = buildTournament(rounds, makeParticipants(2), {})
     expect(finalRound.messages).toEqual([])
@@ -1746,8 +1759,8 @@ describe('ensureFinalRoundShape', () => {
     // passing [Round 1, Round 2(round-2)] to ensureFinalRoundShape.
     // The Final round must NOT reuse "round-2".
     const input: RoundConfig[] = [
-      { id: 'round-1', label: 'Round 1', heats: [createHeat(0, 0, 10, 5)] },
-      { id: 'round-2', label: 'Round 2', heats: [createHeat(1, 0, 5, 1)] },
+      { id: 'round-1', label: 'Round 1', heats: [createHeat(0, 10, 5)] },
+      { id: 'round-2', label: 'Round 2', heats: [createHeat(0, 5, 1)] },
     ]
     const result = ensureFinalRoundShape(input)
     const ids = result.map((r) => r.id)
@@ -1756,20 +1769,21 @@ describe('ensureFinalRoundShape', () => {
 
   it('preserves the existing final round id when the last round is labeled Final', () => {
     const input: RoundConfig[] = [
-      { id: 'round-1', label: 'Round 1', heats: [createHeat(0, 0, 10, 5)] },
-      { id: 'round-2', label: 'Final', heats: [createHeat(1, 0, 5, 1)] },
+      { id: 'round-1', label: 'Round 1', heats: [createHeat(0, 10, 5)] },
+      { id: 'round-2', label: 'Final', heats: [createHeat(0, 5, 1)] },
     ]
     const result = ensureFinalRoundShape(input)
     expect(result[result.length - 1].id).toBe('round-2')
   })
 
-  it('generates a correct final id for a single-round input', () => {
+  it('generates a UUID final id for a single-round input', () => {
     const input: RoundConfig[] = [
-      { id: 'round-1', label: 'Round 1', heats: [createHeat(0, 0, 10, 5)] },
+      { id: 'round-1', label: 'Round 1', heats: [createHeat(0, 10, 5)] },
     ]
     const result = ensureFinalRoundShape(input)
     expect(result).toHaveLength(2)
-    expect(result[1].id).toBe('round-2')
+    expect(result[1].id).toMatch(UUID_RE)
+    expect(result[1].id).not.toBe('round-1')
     expect(result[1].label).toBe('Final')
   })
 })
