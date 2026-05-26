@@ -169,7 +169,7 @@ describe('BracketPanel advancement label', () => {
     expect(markup).toContain('Top 2 racers advance')
   })
 
-  it('shows singular copy when a heat is complete', () => {
+  it('hides the advancement label when a heat is complete', () => {
     const rounds: RoundConfig[] = [
       {
         id: 'r1',
@@ -202,10 +202,11 @@ describe('BracketPanel advancement label', () => {
       />,
     )
 
-    expect(markup).toContain('1 racer to advance')
+    expect(markup).not.toContain('racer to advance')
+    expect(markup).not.toContain('racers to advance')
   })
 
-  it('reflects extra advancers when a boundary tie expands the field', () => {
+  it('hides the advancement label when a boundary tie completes the heat', () => {
     const rounds: RoundConfig[] = [
       {
         id: 'r1',
@@ -238,7 +239,8 @@ describe('BracketPanel advancement label', () => {
       />,
     )
 
-    expect(markup).toContain('2 racers to advance')
+    expect(markup).not.toContain('racer to advance')
+    expect(markup).not.toContain('racers to advance')
   })
 
   it('omits the advancement label for the final round', () => {

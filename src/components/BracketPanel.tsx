@@ -140,12 +140,9 @@ const BracketPanelContent = ({ roundStates, results, isDisplayMode, onSetLaps }:
               const isCollapsed = !isExpanded && collapsedHeatKeys.has(heatKey)
               const isCompleted = ranking.isComplete
               const isFinalRound = roundIndex === roundStates.length - 1
-              const labelAdvanceCount = isCompleted ? ranking.actualAdvancers.length : heat.advanceCount
-              const participantLabel = 'racer' + (labelAdvanceCount === 1 ? '' : 's')
-              const advanceLabel = !isFinalRound && !isCollapsed
-                ? isCompleted
-                  ? `${labelAdvanceCount} ${participantLabel} to advance`
-                  : `Top ${labelAdvanceCount} ${participantLabel} advance`
+              const participantLabel = 'racer' + (heat.advanceCount === 1 ? '' : 's')
+              const advanceLabel = !isFinalRound && !isCollapsed && !isCompleted
+                ? `Top ${heat.advanceCount} ${participantLabel} advance`
                 : null
 
               return (
