@@ -5,8 +5,8 @@ A [vibe-coded](#bot-compliments-bot-%EF%B8%8F) web app for displaying Wacky Race
 ## Run
 
 ```bash
-npm ci
-npm run dev
+pnpm ci
+pnpm run dev
 ```
 
 In the main app, use **Open display popout** to launch a read-only bracket view.
@@ -19,8 +19,8 @@ The final round is auto-managed as a single-heat **Final** and is not configured
 ## Build
 
 ```bash
-npm run build
-npm run preview
+pnpm run build
+pnpm run preview
 ```
 
 ## Code structure

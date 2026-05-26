@@ -7,15 +7,15 @@ Inspect `README.md` for more information on the project and code structure.
 - Keep changes focused and scoped to the requested feature or bug fix.
 - Preserve existing behavior unless the request explicitly changes it.
 - Validate code changes with:
-  - `npm run lint`
-  - `npm run test`
-  - `npm run build`
+  - `pnpm run lint`
+  - `pnpm run test`
+  - `pnpm run build`
 - Update `README.md` as appropriate when changes are made (e.g. to the code
   structure or configuration rules).
 - Follow test-driven development where possible: before implementing a new
   feature or fixing a bug, add a failing test that demonstrates the desired
   behavior, then implement the code to make the test pass. Tests are written
-  using vitetest. Use `npm run test` to run tests.
+  using vitetest. Use `pnpm run test` to run tests.
 
 ## Planning and implementation
 
