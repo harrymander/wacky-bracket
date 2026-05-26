@@ -35,10 +35,10 @@ jobs:
         run: pnpm ci
 
       - name: Linting
-        run: pnpm run lint
+        run: node --run lint
 
       - name: Run tests
-        run: pnpm run test
+        run: node --run test
 
       - name: Build site
         run: |
@@ -47,7 +47,7 @@ jobs:
           else
             BASE_PATH="/${GITHUB_REPOSITORY#*/}/"
           fi
-          pnpm run build --base="${BASE_PATH}"
+          node --run build -- --base="${BASE_PATH}"
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v5
