@@ -26,8 +26,13 @@ npm run preview
 ## Code structure
 
 - `src/hooks/useTournamentState.ts` manages tournament state, actions, persistence, and cross-window sync.
-- `src/components/SetupPanel.tsx` (with setup tile subcomponents) contains setup/editing UI.
+- `src/components/SetupPanel.tsx` is the main container for tournament setup and editing UI.
+- `src/components/ParticipantsSetupTile.tsx` provides UI for managing the participant list (CSV import, sorting, shuffling).
+- `src/components/RoundsSetupTile.tsx` provides UI for configuring round structure, heats, and advancement.
+- `src/components/ConfirmModal.tsx` is a reusable modal for destructive actions and confirmation.
 - `src/components/BracketPanel.tsx` contains bracket display/edit rendering.
+- `src/lib/tournament.ts` contains core domain logic, validation, and tournament state building.
+- `src/lib/roundTransitions.ts` calculates source-to-destination heat mappings for bracket visualization.
 - `src/App.tsx` is the composition root.
 
 ## Configuration rules
