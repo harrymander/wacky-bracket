@@ -47,7 +47,7 @@ jobs:
           else
             BASE_PATH="/${GITHUB_REPOSITORY#*/}/"
           fi
-          pnpm run build -- --base="${BASE_PATH}"
+          pnpm run build --base="${BASE_PATH}"
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v5
